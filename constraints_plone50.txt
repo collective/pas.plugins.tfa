@@ -1,4 +1,4 @@
--c https://dist.plone.org/release/5.0-latest/requirements.txt
+setuptools==42.0.2
 zc.buildout==2.13.1
-setuptools==42.0.1
+configparser==3.7.3
 wheel==0.29.0
