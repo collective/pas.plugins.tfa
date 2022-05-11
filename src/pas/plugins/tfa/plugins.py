@@ -83,8 +83,7 @@ class TFAPlugin(BasePlugin):
         #     return None
 
         user = api.user.get(username=login)
-
-        logger.debug("Found user: %s", user)
+        logger.info("Found user: %s", user)
 
         # two_factor_authentication_enabled = user.getProperty(
         #     'enable_two_factor_authentication')
@@ -118,6 +117,8 @@ class TFAPlugin(BasePlugin):
                     # An auth plugin successfully authenticated the user
                     break
 
+            logger.info("User %s => %s", credentials, authorized)
+
             if authorized is None:
                 # No auth plugin was able to authenticate the user
                 return None
@@ -136,11 +137,10 @@ class TFAPlugin(BasePlugin):
             # stored in users' profile and the browser version.
             request = self.REQUEST
             response = request["RESPONSE"]
-            # response.setCookie('__ac', '', path='/')
 
             # Redirect to token thing...
             signed_url = sign_user_data(request=request, user=user, url="@@2fa")
-            came_from = self.request.get("came_from", "")
+            came_from = request.get("came_from", "")
             if came_from:
                 signed_url = "{0}&next_url={1}".format(signed_url, came_from)
 

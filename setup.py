@@ -24,9 +24,11 @@ setup(
         "Environment :: Web Environment",
         "Framework :: Plone",
         "Framework :: Plone :: Addon",
+        "Framework :: Plone :: 5.0",
         "Framework :: Plone :: 5.2",
         "Framework :: Plone :: 6.0",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -57,7 +59,6 @@ setup(
         "plone.api>=1.8.4",
         "plone.app.dexterity",
         "pyotp",
-        "ska",
     ],
     extras_require={
         "test": [
@@ -65,7 +66,7 @@ setup(
             # Plone KGS does not use this version, because it would break
             # Remove if your package shall be part of coredev.
             # plone_coredev tests as of 2016-04-01.
-            "plone.testing>=5.0.0",
+            "plone.testing",  # >=5.0.0",
             "plone.app.contenttypes",
             "plone.app.robotframework[debug]",
         ],

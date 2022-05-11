@@ -1,16 +1,106 @@
+import base64
+import hashlib
+import time
 from urllib.parse import unquote
+
 from plone import api
 from plone.keyring.interfaces import IKeyManager
 from Products.statusmessages.interfaces import IStatusMessage
 import pyotp
-from ska import sign_url
-from ska import validate_signed_request_data
+# from ska import sign_url
+# from ska import validate_signed_request_data
 from zope.component import getUtility
 from zope.globalrequest import getRequest
 from zope.i18n import translate
 
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
+
 from . import _
 from . import logger
+
+SIGNATURE_LIFETIME = 600
+
+
+def filter_data(url=None, data={}, exclude_args=["signature", "auth_user", "valid_until", "next_url"]):
+    if url:
+        url_qs = url.split("?")[1] if '?' in url else url
+        data = [
+            (k, v)
+            for (k, v) in sorted(urlparse.parse_qsl(url_qs))
+            if k not in exclude_args
+        ]
+    else:
+        data = [
+            (k, v)
+            for (k, v) in sorted(data.items())
+            if k not in exclude_args
+        ]
+    return "&".join(["{}={}".format(k, v) for (k, v) in data])
+
+
+def sign_data(data_str, secret_key, auth_user, valid_until):
+    signature = hashlib.sha256(
+        "{}#{}#{}#{}".format(data_str, secret_key, auth_user, valid_until).encode()
+    ).hexdigest()
+    return signature
+
+def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url= ""):
+    """Sign the URL.
+    :param auth_user: Username of the user making the request.
+    :param secret_key: The shared secret key.
+    :param lifetime: Signature lifetime in seconds.
+    :param url: URL to be signed.
+    """
+    if lifetime is None:
+        lifetime = SIGNATURE_LIFETIME
+
+    assert isinstance(lifetime, int)
+
+    valid_until = int(time.time()) + lifetime
+    data_str = filter_data(url=url)
+    # import pdb; pdb.set_trace()
+    signature = sign_data(data_str, secret_key, auth_user, valid_until)
+    logger.info("S Signature: %s %s %s %s => %s", data_str, secret_key, auth_user, valid_until, signature)
+
+    signed_url = "{url}{sep}auth_user={auth_user}&valid_until={valid_until}&signature={signature}".format(
+        url=url,
+        sep="?" if "?" not in url else "&",
+        auth_user=auth_user,
+        valid_until=valid_until,
+        signature=signature,
+    )
+    logger.info("Signed URL: %s %s %s %s => %s", auth_user, secret_key, lifetime, url, signed_url)
+    return signed_url
+
+
+class ValidationResult(object):
+    def __init__(self, result, reason=""):
+        self.result = result
+        self.reason = reason
+
+
+def validate_signed_request_data(data={}, secret_key=None):
+    """_summary_
+
+    Args:
+        data (dict, optional): _description_. Defaults to {}.
+        secret_key (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
+    auth_user = data["auth_user"]
+    valid_until = data["valid_until"]
+    # TODO: mettere in reason l'eventuale tipo di errore (expire, invalid, ...)
+    reason = []
+    # TODO: verificare expired date
+    data_str = filter_data(data=data)
+    signature = sign_data(data_str, secret_key, auth_user, valid_until)
+    logger.info("V Signature: %s %s %s %s => %s", data_str, secret_key, auth_user, valid_until, signature)
+    return ValidationResult(result=signature == data["signature"], reason=reason)
 
 
 def get_or_create_secret(user=None, overwrite=False):
@@ -139,7 +229,7 @@ def validate_user_data(request, user, use_browser_hash=True):
     secret_key = get_ska_secret_key(
         request=request, user=user, use_browser_hash=use_browser_hash
     )
-    logger.info("validate_user_data: secret_key: %s", secret_key)
+    logger.info("validate_user_data: %s, %s", extract_request_data(request), secret_key)
     validation_result = validate_signed_request_data(
         data=extract_request_data(request), secret_key=secret_key
     )
@@ -203,7 +293,6 @@ def validate_token(token, user=None):
     user_secret = user.getProperty("two_factor_authentication_secret")
     # TODO: il token va validato secondo l'algoritmo definito dal 'device' impostato
     # per l'user
-    # import pdb; pdb.set_trace()
     # per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
     # di usare HOTP al posto di TOTP
     validation_result = pyotp.TOTP(user_secret, interval=10 * 60).verify(token)
