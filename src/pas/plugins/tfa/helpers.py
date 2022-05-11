@@ -7,6 +7,7 @@ from plone import api
 from plone.keyring.interfaces import IKeyManager
 from Products.statusmessages.interfaces import IStatusMessage
 import pyotp
+
 # from ska import sign_url
 # from ska import validate_signed_request_data
 from zope.component import getUtility
@@ -24,20 +25,20 @@ from . import logger
 SIGNATURE_LIFETIME = 600
 
 
-def filter_data(url=None, data={}, exclude_args=["signature", "auth_user", "valid_until", "next_url"]):
+def filter_data(
+    url=None,
+    data={},
+    exclude_args=["signature", "auth_user", "valid_until", "next_url"],
+):
     if url:
-        url_qs = url.split("?")[1] if '?' in url else url
+        url_qs = url.split("?")[1] if "?" in url else url
         data = [
             (k, v)
             for (k, v) in sorted(urlparse.parse_qsl(url_qs))
             if k not in exclude_args
         ]
     else:
-        data = [
-            (k, v)
-            for (k, v) in sorted(data.items())
-            if k not in exclude_args
-        ]
+        data = [(k, v) for (k, v) in sorted(data.items()) if k not in exclude_args]
     return "&".join(["{}={}".format(k, v) for (k, v) in data])
 
 
@@ -47,7 +48,8 @@ def sign_data(data_str, secret_key, auth_user, valid_until):
     ).hexdigest()
     return signature
 
-def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url= ""):
+
+def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url=""):
     """Sign the URL.
     :param auth_user: Username of the user making the request.
     :param secret_key: The shared secret key.
@@ -63,7 +65,14 @@ def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url= ""):
     data_str = filter_data(url=url)
     # import pdb; pdb.set_trace()
     signature = sign_data(data_str, secret_key, auth_user, valid_until)
-    logger.info("S Signature: %s %s %s %s => %s", data_str, secret_key, auth_user, valid_until, signature)
+    logger.info(
+        "S Signature: %s %s %s %s => %s",
+        data_str,
+        secret_key,
+        auth_user,
+        valid_until,
+        signature,
+    )
 
     signed_url = "{url}{sep}auth_user={auth_user}&valid_until={valid_until}&signature={signature}".format(
         url=url,
@@ -72,7 +81,14 @@ def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url= ""):
         valid_until=valid_until,
         signature=signature,
     )
-    logger.info("Signed URL: %s %s %s %s => %s", auth_user, secret_key, lifetime, url, signed_url)
+    logger.info(
+        "Signed URL: %s %s %s %s => %s",
+        auth_user,
+        secret_key,
+        lifetime,
+        url,
+        signed_url,
+    )
     return signed_url
 
 
@@ -99,7 +115,14 @@ def validate_signed_request_data(data={}, secret_key=None):
     # TODO: verificare expired date
     data_str = filter_data(data=data)
     signature = sign_data(data_str, secret_key, auth_user, valid_until)
-    logger.info("V Signature: %s %s %s %s => %s", data_str, secret_key, auth_user, valid_until, signature)
+    logger.info(
+        "V Signature: %s %s %s %s => %s",
+        data_str,
+        secret_key,
+        auth_user,
+        valid_until,
+        signature,
+    )
     return ValidationResult(result=signature == data["signature"], reason=reason)
 
 

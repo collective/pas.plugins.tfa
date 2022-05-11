@@ -6,7 +6,8 @@ from zope.interface import implementer
 from . import logger
 from .plugins import TFAPlugin
 
-PLUGIN_ID = 'two-factor-authentication'
+PLUGIN_ID = "two-factor-authentication"
+
 
 @implementer(INonInstallable)
 class HiddenProfiles(object):
@@ -74,9 +75,7 @@ def uninstall(context):
 
     plugin = getattr(pas, PLUGIN_ID)
     if not isinstance(plugin, TFAPlugin):
-        logger.warning(
-            "PAS plugin %s not removed: it is not a TFAPlugin.", PLUGIN_ID
-        )
+        logger.warning("PAS plugin %s not removed: it is not a TFAPlugin.", PLUGIN_ID)
         return
     pas._delObject(PLUGIN_ID)
     logger.info("Removed HeaderPlugin %s from acl_users.", PLUGIN_ID)
