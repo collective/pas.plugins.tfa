@@ -1,4 +1,4 @@
 setuptools==42.0.2
-zc.buildout==2.9.5
+zc.buildout==2.13.1
 configparser==3.7.3
 wheel==0.29.0
