@@ -21,11 +21,12 @@ class PasPluginsOtpLayer(PloneSandboxLayer):
         # The z3c.autoinclude feature is disabled in the Plone fixture base
         # layer.
         import plone.restapi
+
         self.loadZCML(package=plone.restapi)
         self.loadZCML(package=pas.plugins.tfa)
 
     def setUpPloneSite(self, portal):
-        applyProfile(portal, 'pas.plugins.tfa:default')
+        applyProfile(portal, "pas.plugins.tfa:default")
 
 
 PAS_PLUGINS_OTP_FIXTURE = PasPluginsOtpLayer()
@@ -33,13 +34,13 @@ PAS_PLUGINS_OTP_FIXTURE = PasPluginsOtpLayer()
 
 PAS_PLUGINS_OTP_INTEGRATION_TESTING = IntegrationTesting(
     bases=(PAS_PLUGINS_OTP_FIXTURE,),
-    name='PasPluginsOtpLayer:IntegrationTesting',
+    name="PasPluginsOtpLayer:IntegrationTesting",
 )
 
 
 PAS_PLUGINS_OTP_FUNCTIONAL_TESTING = FunctionalTesting(
     bases=(PAS_PLUGINS_OTP_FIXTURE,),
-    name='PasPluginsOtpLayer:FunctionalTesting',
+    name="PasPluginsOtpLayer:FunctionalTesting",
 )
 
 
@@ -49,5 +50,5 @@ PAS_PLUGINS_OTP_ACCEPTANCE_TESTING = FunctionalTesting(
         REMOTE_LIBRARY_BUNDLE_FIXTURE,
         z2.ZSERVER_FIXTURE,
     ),
-    name='PasPluginsOtpLayer:AcceptanceTesting',
+    name="PasPluginsOtpLayer:AcceptanceTesting",
 )

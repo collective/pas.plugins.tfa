@@ -6,8 +6,8 @@ from AccessControl.Permissions import manage_users as ManageUsers
 from Products.PluggableAuthService.PluggableAuthService import registerMultiPlugin
 
 
-_ = MessageFactory('pas.plugins.tfa')
-PMF = MessageFactory('plone')
+_ = MessageFactory("pas.plugins.tfa")
+PMF = MessageFactory("plone")
 logger = logging.getLogger(__name__)
 
 
@@ -20,6 +20,9 @@ def initialize(context):  # pragma: no cover
     context.registerClass(
         plugins.TFAPlugin,
         permission=ManageUsers,
-        constructors=(plugins.manage_addTwoFactorAutenticationPluginForm, plugins.addTwoFactorAutenticationAuthenticatorPlugin),
-   # icon='www/PluggableAuthService.png',
+        constructors=(
+            plugins.manage_addTwoFactorAutenticationPluginForm,
+            plugins.addTwoFactorAutenticationAuthenticatorPlugin,
+        ),
+        # icon='www/PluggableAuthService.png',
     )

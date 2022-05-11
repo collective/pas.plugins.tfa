@@ -28,16 +28,16 @@ def get_or_create_secret(user=None, overwrite=False):
     if user is None:
         user = api.user.get_current()
     if not overwrite:
-        secret = user.getProperty('two_factor_authentication_secret', None)
+        secret = user.getProperty("two_factor_authentication_secret", None)
         if isinstance(secret, str) and secret:
             return secret
     secret = pyotp.random_base32()
     # TODO p.protect.safeWrite ?
-    user.setMemberProperties(mapping={'two_factor_authentication_secret': secret})
+    user.setMemberProperties(mapping={"two_factor_authentication_secret": secret})
     return secret
 
 
-def sign_user_data(request=None, user=None, url='@@2fa-login'):
+def sign_user_data(request=None, user=None, url="@@2fa-login"):
     """
     Signs the user data with `ska` package. The secret key is `secret_key` to
     be used with `ska` is a combination of:
@@ -61,15 +61,13 @@ def sign_user_data(request=None, user=None, url='@@2fa-login'):
     user_secret = get_or_create_secret(user)
 
     secret_key = get_ska_secret_key(request=request, user_secret=user_secret)
-    signed_url = sign_url(
-        auth_user=user.getUserId(),
-        secret_key=secret_key,
-        url=url
-    )
+    signed_url = sign_url(auth_user=user.getUserId(), secret_key=secret_key, url=url)
     return signed_url
 
 
-def get_ska_secret_key(request=None, user_secret=None, user=None, use_browser_hash=True):
+def get_ska_secret_key(
+    request=None, user_secret=None, user=None, use_browser_hash=True
+):
     """
     Gets the `secret_key` to be used in `ska` package.
 
@@ -89,7 +87,7 @@ def get_ska_secret_key(request=None, user_secret=None, user=None, use_browser_ha
     if user_secret is None:
         if user is None:
             user = api.user.get_current()
-        user_secret = user.getProperty('two_factor_authentication_secret')
+        user_secret = user.getProperty("two_factor_authentication_secret")
 
     # settings = get_app_settings()
     # ska_secret_key = settings.ska_secret_key
@@ -116,10 +114,11 @@ def drop_login_failed_msg(request):
 
     :param ZPublisher.HTTPRequest request:
     """
-    login_failed = ("Login failed. Both login name and password are case "
-                    "sensitive, check that caps lock is not enabled.")
-    login_failed_translated = translate(
-        login_failed, domain='plone', context=request)
+    login_failed = (
+        "Login failed. Both login name and password are case "
+        "sensitive, check that caps lock is not enabled."
+    )
+    login_failed_translated = translate(login_failed, domain="plone", context=request)
     status_messages = IStatusMessage(request)
     msgs = status_messages.show()
     for msg in msgs:
@@ -138,11 +137,11 @@ def validate_user_data(request, user, use_browser_hash=True):
     :return ska.SignatureValidationResult:
     """
     secret_key = get_ska_secret_key(
-        request=request, user=user, use_browser_hash=use_browser_hash)
+        request=request, user=user, use_browser_hash=use_browser_hash
+    )
     logger.info("validate_user_data: secret_key: %s", secret_key)
     validation_result = validate_signed_request_data(
-        data=extract_request_data(request),
-        secret_key=secret_key
+        data=extract_request_data(request), secret_key=secret_key
     )
     return validation_result
 
@@ -165,9 +164,9 @@ def extract_request_data_from_query_string(request_qs):
     if not request_qs:
         return request_data
 
-    for part in request_qs.split('&'):
+    for part in request_qs.split("&"):
         try:
-            key, value = part.split('=', 1)
+            key, value = part.split("=", 1)
             request_data.update({key: unquote(value)})
         except ValueError:
             pass
@@ -188,7 +187,7 @@ def extract_request_data(request):
     :param request ZPublisher.HTTPRequest:
     :return dict:
     """
-    request_qs = request.get('QUERY_STRING')
+    request_qs = request.get("QUERY_STRING")
     return extract_request_data_from_query_string(request_qs)
 
 
@@ -201,12 +200,14 @@ def validate_token(token, user=None):
     """
     if user is None:
         user = api.user.get_current()
-    user_secret = user.getProperty('two_factor_authentication_secret')
+    user_secret = user.getProperty("two_factor_authentication_secret")
     # TODO: il token va validato secondo l'algoritmo definito dal 'device' impostato
     # per l'user
     # import pdb; pdb.set_trace()
     # per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
     # di usare HOTP al posto di TOTP
-    validation_result = pyotp.TOTP(user_secret, interval=10*60).verify(token)
-    logger.info("validate_token: token: %s %s %s", user_secret, token, validation_result)
+    validation_result = pyotp.TOTP(user_secret, interval=10 * 60).verify(token)
+    logger.info(
+        "validate_token: token: %s %s %s", user_secret, token, validation_result
+    )
     return validation_result

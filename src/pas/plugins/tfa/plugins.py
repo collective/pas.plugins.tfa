@@ -14,10 +14,10 @@ from AccessControl.class_init import InitializeClass
 from AccessControl.SecurityInfo import ClassSecurityInfo
 from plone import api
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.PluggableAuthService.interfaces.plugins import \
-    IAuthenticationPlugin
-from Products.PluggableAuthService.PluggableAuthService import \
-    _SWALLOWABLE_PLUGIN_EXCEPTIONS
+from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.PluggableAuthService import (
+    _SWALLOWABLE_PLUGIN_EXCEPTIONS,
+)
 from Products.PluggableAuthService.PluggableAuthService import reraise
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
@@ -31,13 +31,11 @@ import pyotp
 # from ..helpers import is_whitelisted_client
 
 manage_addTwoFactorAutenticationPluginForm = PageTemplateFile(
-    'www/add_tfa_form',
-    globals(),
-    __name__='manage_addTwoFactorAutenticationPluginForm'
+    "www/add_tfa_form", globals(), __name__="manage_addTwoFactorAutenticationPluginForm"
 )
 
 
-def addTwoFactorAutenticationAuthenticatorPlugin(self, id, title='', REQUEST=None):
+def addTwoFactorAutenticationAuthenticatorPlugin(self, id, title="", REQUEST=None):
     """
     Add a Two Factor Autentication PAS Plugin to Plone PAS
     """
@@ -45,17 +43,18 @@ def addTwoFactorAutenticationAuthenticatorPlugin(self, id, title='', REQUEST=Non
     self._setObject(o.getId(), o)
 
     if REQUEST is not None:
-        msg = 'Two+Factor+Autentication+PAS+Plugin+added.'
-        REQUEST['RESPONSE'].redirect(
-            '{0}/manage_main?manage_tabs_message={1}'.format(
-                self.absolute_url(), msg))
+        msg = "Two+Factor+Autentication+PAS+Plugin+added."
+        REQUEST["RESPONSE"].redirect(
+            "{0}/manage_main?manage_tabs_message={1}".format(self.absolute_url(), msg)
+        )
 
 
 class TFAPlugin(BasePlugin):
     """
     TFA PAS Plugin
     """
-    meta_type = 'Collective Two Factor Autentication PAS'
+
+    meta_type = "Collective Two Factor Autentication PAS"
     security = ClassSecurityInfo()
 
     def __init__(self, id, title=None):
@@ -75,7 +74,7 @@ class TFAPlugin(BasePlugin):
         token submitted. If the token is valid too, we log the user in.
         """
 
-        login = credentials['login']
+        login = credentials["login"]
 
         if not login:
             return None
@@ -108,11 +107,10 @@ class TFAPlugin(BasePlugin):
                     continue
 
                 try:
-                    authorized = authplugin.authenticateCredentials(
-                        credentials)
+                    authorized = authplugin.authenticateCredentials(credentials)
                 except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
                     reraise(authplugin)
-                    msg = 'AuthenticationPlugin {0} error'.format(plugid)
+                    msg = "AuthenticationPlugin {0} error".format(plugid)
                     logger.info(msg, exc_info=True)
                     continue
 
@@ -137,14 +135,14 @@ class TFAPlugin(BasePlugin):
             # The secret key would be then a combination of username, secret
             # stored in users' profile and the browser version.
             request = self.REQUEST
-            response = request['RESPONSE']
+            response = request["RESPONSE"]
             # response.setCookie('__ac', '', path='/')
 
             # Redirect to token thing...
-            signed_url = sign_user_data(request=request, user=user, url='@@2fa')
-            came_from = self.request.get('came_from', '')
+            signed_url = sign_user_data(request=request, user=user, url="@@2fa")
+            came_from = self.request.get("came_from", "")
             if came_from:
-                signed_url = '{0}&next_url={1}'.format(signed_url, came_from)
+                signed_url = "{0}&next_url={1}".format(signed_url, came_from)
 
             # XXX: uno status message di tipo errore è necessario se si usa la popup
             # di login, altrimenti viene automaticamente chiusa
@@ -156,7 +154,7 @@ class TFAPlugin(BasePlugin):
             logger.info("User secret: %s", user_secret)
             # per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
             # di usare HOTP al posto di TOTP
-            token = pyotp.TOTP(user_secret, interval=10*60).now()
+            token = pyotp.TOTP(user_secret, interval=10 * 60).now()
             logger.info("User secret: %s token: %s", user_secret, token)
             # TODO: spedire il token via sms all'utente
 
@@ -164,7 +162,7 @@ class TFAPlugin(BasePlugin):
 
             return None
 
-        if credentials.get('extractor') != self.getId():
+        if credentials.get("extractor") != self.getId():
             return None
 
         return None
