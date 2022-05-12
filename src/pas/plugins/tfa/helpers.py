@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
 import base64
 import hashlib
 import time
-from urllib.parse import unquote
+
+try:
+    from urllib.parse import unquote
+except:
+    from urlparse import unquote
 
 from plone import api
 from plone.keyring.interfaces import IKeyManager

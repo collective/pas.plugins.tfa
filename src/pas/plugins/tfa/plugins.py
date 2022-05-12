@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 The idea of this PAS plugin is quite simple. It should check the user profile
 for the user being logged in and if user has enabled two-step verification for

@@ -1,7 +1,4 @@
-"""
-Token validation.
-"""
-
+# -*- coding: utf-8 -*-
 from plone import api
 from plone.autoform.form import AutoExtensibleForm
 from plone.supermodel import model
