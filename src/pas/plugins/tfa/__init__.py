@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 """Init and utils."""
-from zope.i18nmessageid import MessageFactory
-import logging
 from AccessControl.Permissions import manage_users as ManageUsers
 from Products.PluggableAuthService.PluggableAuthService import registerMultiPlugin
+from zope.i18nmessageid import MessageFactory
+import logging
 
+
+try:
+    from iw.rejectanonymous import addValidSubparts
+
+    addValidSubparts("@@2fa")
+except ImportError:
+    pass
 
 _ = MessageFactory("pas.plugins.tfa")
 PMF = MessageFactory("plone")
