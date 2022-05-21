@@ -286,3 +286,24 @@ def validate_token(token, user=None):
         "validate_token: token: %s %s %s", user_secret, token, validation_result
     )
     return validation_result
+
+
+def extract_ip_address_from_request(request=None):
+    """
+    Extracts client's IP address from request. This is not the safest solution,
+    since client may change headers. The first endpoint must remove a possibly forged
+    X-Forwarded-For header
+
+    :param ZPublisher.HTTPRequest request:
+    :return string:
+    """
+    if not request:
+        request = getRequest()
+    ip = request.get("REMOTE_ADDR")
+    x_forwarded_for = request.get("HTTP_X_FORWARDED_FOR")
+
+    if x_forwarded_for:
+        proxies = [proxy.strip() for proxy in x_forwarded_for.split(",")]
+        ip = proxies[0]
+    return ip
+    # return ipaddress.ip_address(ip)

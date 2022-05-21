@@ -22,14 +22,13 @@ from Products.PluggableAuthService.PluggableAuthService import (
 from Products.PluggableAuthService.PluggableAuthService import reraise
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
-
-from . import logger
-from .helpers import sign_user_data
-from .helpers import get_or_create_secret
 import pyotp
 
-# TODO
-# from ..helpers import is_whitelisted_client
+from . import logger
+from .helpers import extract_ip_address_from_request
+from .helpers import get_or_create_secret
+from .helpers import sign_user_data
+
 
 manage_addTwoFactorAutenticationPluginForm = PageTemplateFile(
     "www/add_tfa_form", globals(), __name__="manage_addTwoFactorAutenticationPluginForm"
@@ -62,6 +61,18 @@ class TFAPlugin(BasePlugin):
         self._setId(id)
         self.title = title
 
+    def is_whitelisted_client(self):
+        # TODO: spostare nei registry
+        settings = {
+            "whitelist": ["10.0.", "10.1."],
+        }
+        ip = extract_ip_address_from_request(self.REQUEST)
+        logger.debug("ip detected %s", ip)
+        for prefix in settings["whitelist"]:
+            if ip.startswith(prefix):
+                return True
+        return False
+
     def authenticateCredentials(self, credentials):
         """
         Place to actually validate the user credentials specified and return a
@@ -75,22 +86,20 @@ class TFAPlugin(BasePlugin):
         token submitted. If the token is valid too, we log the user in.
         """
 
-        login = credentials["login"]
-
+        login = credentials.get("login")
         if not login:
             return None
 
-        # if is_whitelisted_client():
-        #     return None
+        if self.is_whitelisted_client():
+            return None
 
         user = api.user.get(username=login)
-        logger.info("Found user: %s", user)
+        logger.debug("Found user: %s", user)
 
         # two_factor_authentication_enabled = user.getProperty(
         #     'enable_two_factor_authentication')
         # logger.debug("Two-step verification enabled: {0}".format(
         #     two_factor_authentication_enabled))
-
         two_factor_authentication_enabled = True
 
         if two_factor_authentication_enabled:
@@ -129,44 +138,57 @@ class TFAPlugin(BasePlugin):
             # from authenticating the user before we verified the token.
             # This does produce a "Login failed" status message though that
             # we need to remove in the token validation view
+            # TODO: se non è possibile creare/inviare il token l'autenticazione
+            # deve fallire (si eliminano i dati in credentials) oppure deve
+            # andare correttamente (si spostano queste due righe dentro l'if) ?
             for key in list(credentials.keys()):
                 del credentials[key]
 
-            # Setting the data in the session doesn't seem to work. That's why
-            # we use the `ska` package.
-            # The secret key would be then a combination of username, secret
-            # stored in users' profile and the browser version.
-            request = self.REQUEST
-            response = request["RESPONSE"]
+            if self.create_and_deliver_token(user):
+                request = self.REQUEST
+                response = request["RESPONSE"]
 
-            # Redirect to token thing...
-            signed_url = sign_user_data(request=request, user=user, url="@@2fa")
-            came_from = request.get("came_from", "")
-            if came_from:
-                signed_url = "{0}&next_url={1}".format(signed_url, came_from)
+                # Redirect to token thing...
+                signed_url = sign_user_data(request=request, user=user, url="@@2fa")
+                came_from = request.get("came_from", "")
+                if came_from:
+                    signed_url = "{0}&next_url={1}".format(signed_url, came_from)
 
-            # XXX: uno status message di tipo errore è necessario se si usa la popup
-            # di login, altrimenti viene automaticamente chiusa
-            # TODO: riportare ne messaggio l'informazione che il token è stato spedito
-            # al numero di cellulare via sms indicando le ultime cifre del numero
-            api.portal.show_message("TOKEN_REQUIRED", request, type="error")
-
-            user_secret = get_or_create_secret(user)
-            logger.info("User secret: %s", user_secret)
-            # per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
-            # di usare HOTP al posto di TOTP
-            token = pyotp.TOTP(user_secret, interval=10 * 60).now()
-            logger.info("User secret: %s token: %s", user_secret, token)
-            # TODO: spedire il token via sms all'utente
-
-            response.redirect(signed_url, lock=1)
-
-            return None
-
-        if credentials.get("extractor") != self.getId():
+                # XXX: uno status message di tipo errore è necessario se si usa la popup
+                # di login, altrimenti viene automaticamente chiusa
+                api.portal.show_message("TOKEN_REQUIRED", request, type="error")
+                response.redirect(signed_url, lock=1)
             return None
 
         return None
+
+    def create_and_deliver_token(self, user):
+        """_summary_
+
+        Args:
+            user (_type_): _description_
+            token (_type_): _description_
+
+        Raise:
+            ....
+
+        Returns:
+            _type_: _description_
+        """
+        # TODO: creare e spedire il token via sms all'utente. usando un adapter
+        # TODO: opzione a: si crea una form intermedia dove l'utente sceglie la modalità di
+        # token preferita (sms, voicecall, app, ...), se di modalità disponibili ce n'è solo una
+        # la pagian intermedia viene saltata
+        # TODO: opzione b: la scelta dell'utente è salvata sul suo profilo
+        user_secret = get_or_create_secret(user)
+        logger.info("User secret: %s", user_secret)
+        # TODO: per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
+        # di usare HOTP al posto di TOTP
+        # TODO: riportare in uno statusmessage l'informazione che il token è stato spedito
+        # al numero di cellulare via sms indicando le ultime cifre del numero
+        token = pyotp.TOTP(user_secret, interval=10 * 60).now()
+        logger.info("Deliver token: %s to user: %s", token, user)
+        return True
 
 
 classImplements(TFAPlugin, IAuthenticationPlugin)
