@@ -60,7 +60,7 @@ def post_install(context):
     # This is not needed for all plugin interfaces.
     for info in plugins.listPluginTypeInfo():
         interface_name = info["id"]
-        if interface_name in ["IAuthenticationPlugin"]:
+        if interface_name in ["IAuthenticationPlugin", "IExtractionPlugin"]:
             iface = plugins._getInterfaceFromName(interface_name)
             for obj in plugins.listPlugins(iface):
                 plugins.movePluginsUp(iface, [PLUGIN_ID])
@@ -78,4 +78,4 @@ def uninstall(context):
         logger.warning("PAS plugin %s not removed: it is not a TFAPlugin.", PLUGIN_ID)
         return
     pas._delObject(PLUGIN_ID)
-    logger.info("Removed HeaderPlugin %s from acl_users.", PLUGIN_ID)
+    logger.info("Removed TFAPlugin %s from acl_users.", PLUGIN_ID)

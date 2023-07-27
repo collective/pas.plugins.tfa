@@ -30,7 +30,7 @@ class TestSetup(unittest.TestCase):
             self.installer = api.portal.get_tool("portal_quickinstaller")
 
     def test_sign_url(self):
-        auth_user = "user1"
+        login = "user1"
         secret_key = "secret"
-        signed_url = helpers.sign_url(auth_user, secret_key, lifetime=10, url="")
-        self.assertTrue(signed_url.startswith("?auth_user=user1&"))
+        signed_url = helpers.sign_url(login, secret_key, lifetime=10, url="")
+        self.assertTrue(signed_url.startswith("?login=user1&"))

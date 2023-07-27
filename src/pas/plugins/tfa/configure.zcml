@@ -17,6 +17,7 @@
   <five:registerPackage package="." initialize=".initialize" />
 
   <include package=".browser" />
+  <include package=".restapi" />
 
   <include file="permissions.zcml" />
 

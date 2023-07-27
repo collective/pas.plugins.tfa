@@ -65,7 +65,7 @@ class TokenForm(AutoExtensibleForm, form.Form):
         token = data.get("token", "")
 
         user = None
-        username = self.request.get("auth_user", "")
+        username = self.request.get("login", "")
 
         if username:
             user = api.user.get(username=username)

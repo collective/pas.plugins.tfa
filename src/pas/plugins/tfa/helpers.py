@@ -9,34 +9,11 @@ import pyotp
 from zope.component import getUtility
 from zope.globalrequest import getRequest
 from zope.i18n import translate
-
-# try:
-#     import urllib.parse as urlparse
-# except ImportError:
-#     import urlparse
+from urllib.parse import urlparse
 
 from . import logger
 
 SIGNATURE_LIFETIME = 600
-
-
-# def filter_data(
-#     url, exclude_args=["signature", "auth_user", "valid_until", "next_url"]
-# ):
-#     """_summary_
-#
-#     Args:
-#         url (str): _description_
-#         exclude_args (list, optional): _description_. Defaults to ["signature", "auth_user", "valid_until", "next_url"].
-#
-#     Returns:
-#         str: _description_
-#     """
-#     url_qs = url.split("?")[1] if "?" in url else url
-#     data = [
-#         (k, v) for (k, v) in sorted(urlparse.parse_qsl(url_qs)) if k not in exclude_args
-#     ]
-#     return "&".join(["{}={}".format(k, v) for (k, v) in data])
 
 
 def sign_data(**kwargs):
@@ -46,9 +23,9 @@ def sign_data(**kwargs):
     return signature
 
 
-def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url=""):
+def sign_url(login, secret_key, lifetime=SIGNATURE_LIFETIME, url=""):
     """Sign the URL.
-    :param auth_user: Username of the user making the request.
+    :param login: Username of the user making the request.
     :param secret_key: The shared secret key.
     :param lifetime: Signature lifetime in seconds.
     :param url: URL to be signed.
@@ -59,27 +36,21 @@ def sign_url(auth_user, secret_key, lifetime=SIGNATURE_LIFETIME, url=""):
     assert isinstance(lifetime, int)
 
     valid_until = int(time.time()) + lifetime
-    signature = sign_data(
-        secret_key=secret_key, auth_user=auth_user, valid_until=valid_until
-    )
+    signature = sign_data(secret_key=secret_key, login=login, valid_until=valid_until)
     logger.debug(
         "S Signature: %s %s %s => %s",
         secret_key,
-        auth_user,
+        login,
         valid_until,
         signature,
     )
-
-    signed_url = "{url}{sep}auth_user={auth_user}&valid_until={valid_until}&signature={signature}".format(
-        url=url,
-        sep="?" if "?" not in url else "&",
-        auth_user=auth_user,
-        valid_until=valid_until,
-        signature=signature,
+    sep = "?" if "?" not in url else "&"
+    signed_url = (
+        f"{url}{sep}login={login}&valid_until={valid_until}&signature={signature}"
     )
     logger.debug(
         "Signed URL: %s %s %s %s => %s",
-        auth_user,
+        login,
         secret_key,
         lifetime,
         url,
@@ -129,7 +100,7 @@ def sign_user_data(request=None, user=None, url="@@2fa-login"):
     # Make sure the secret key always exists
     user_secret = get_or_create_secret(user)
     secret_key = get_secret_key(request=request, user_secret=user_secret)
-    signed_url = sign_url(auth_user=user.getUserId(), secret_key=secret_key, url=url)
+    signed_url = sign_url(login=user.getUserId(), secret_key=secret_key, url=url)
     return signed_url
 
 
@@ -142,9 +113,8 @@ def get_secret_key(request=None, user_secret=None, user=None):
     - The SECRET set for the `ska` (use `plone.app.registry`).
 
     :param ZPublisher.HTTPRequest request:
+    :param string user_secret:
     :param Products.PlonePAS.tools.memberdata user:
-    :param bool use_browser_hash: If set to True, browser hash is used.
-        Otherwise - not. Defaults to True.
     :return string:
     """
     if request is None:
@@ -200,7 +170,7 @@ def validate_user_data(request, user):
     :return SignatureValidationResult:
     """
     secret_key = get_secret_key(request=request, user=user)
-    auth_user = request.get("auth_user")
+    login = request.get("login")
     valid_until = int(request.get("valid_until"))
     reason = []
     if valid_until < int(time.time()):
@@ -208,12 +178,12 @@ def validate_user_data(request, user):
         result = False
     else:
         signature = sign_data(
-            secret_key=secret_key, auth_user=auth_user, valid_until=valid_until
+            secret_key=secret_key, login=login, valid_until=valid_until
         )
         logger.debug(
             "V Signature: %s %s %s => %s",
             secret_key,
-            auth_user,
+            login,
             valid_until,
             signature,
         )
@@ -267,21 +237,21 @@ def validate_user_data(request, user):
 #     return extract_request_data_from_query_string(request_qs)
 
 
-def validate_token(token, user=None):
+def validate_token(token, user=None, user_secret=None, interval=30):
     """
     Validates the given token.
 
     :param string token:
     :return bool:
     """
-    if user is None:
-        user = api.user.get_current()
-    user_secret = user.getProperty("two_factor_authentication_secret")
+    if user_secret is None:
+        if user is None:
+            user = api.user.get_current()
+        user_secret = user.getProperty("two_factor_authentication_secret")
     # TODO: il token va validato secondo l'algoritmo definito dal 'device' impostato
-    # per l'user
-    # per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
-    # di usare HOTP al posto di TOTP
-    validation_result = pyotp.TOTP(user_secret, interval=10 * 60).verify(token)
+    # per l'user per gli SMS  si potrebbe eventualmente pensare di usare HOTP al posto
+    # di TOTP, per ovviare al problema del tempo di validità del token
+    validation_result = pyotp.TOTP(user_secret, interval=interval).verify(token)
     logger.info(
         "validate_token: token: %s %s %s", user_secret, token, validation_result
     )
@@ -307,3 +277,11 @@ def extract_ip_address_from_request(request=None):
         ip = proxies[0]
     return ip
     # return ipaddress.ip_address(ip)
+
+
+def get_domain_name():
+    """
+    Gets domain name.
+    """
+    parsed_uri = urlparse(api.portal.get().absolute_url())
+    return parsed_uri.netloc.split(":")[0]

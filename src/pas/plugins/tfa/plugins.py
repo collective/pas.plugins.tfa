@@ -2,13 +2,13 @@
 """
 The idea of this PAS plugin is quite simple. It should check the user profile
 for the user being logged in and if user has enabled two-step verification for
-his account (``enable_two_factor_authentication`` is set to True), then
+his account (``two_factor_authentication_enabled`` is set to True), then
 redirect him further to a another page, where he would enter his 2FA token,
 after successful validation of which the user would be
 definitely logged in.
 
 If user has not enabled the two-step verification for his account
-(``enable_two_factor_authentication`` is set to False), then do nothing so
+(``two_factor_authentication_enabled`` is set to False), then do nothing so
 that Plone continues logging in the user normal way.
 """
 from AccessControl.class_init import InitializeClass
@@ -16,18 +16,25 @@ from AccessControl.SecurityInfo import ClassSecurityInfo
 from plone import api
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IExtractionPlugin
 from Products.PluggableAuthService.PluggableAuthService import (
     _SWALLOWABLE_PLUGIN_EXCEPTIONS,
 )
 from Products.PluggableAuthService.PluggableAuthService import reraise
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
-import pyotp
-
+from plone.restapi.pas.plugin import JWTAuthenticationPlugin
 from . import logger
-from .helpers import extract_ip_address_from_request
+
+# from .helpers import extract_ip_address_from_request
 from .helpers import get_or_create_secret
 from .helpers import sign_user_data
+from .helpers import get_domain_name
+from .helpers import validate_token
+from .interfaces import OTP_CHALLENGE_KEY
+from zope.annotation.interfaces import IAnnotations
+from plone.restapi.deserializer import json_body
+from plone.restapi.exceptions import DeserializationError
 
 
 manage_addTwoFactorAutenticationPluginForm = PageTemplateFile(
@@ -61,17 +68,27 @@ class TFAPlugin(BasePlugin):
         self._setId(id)
         self.title = title
 
-    def is_whitelisted_client(self):
-        # TODO: spostare nei registry
-        settings = {
-            "whitelist": ["10.0.", "10.1."],
-        }
-        ip = extract_ip_address_from_request(self.REQUEST)
-        logger.debug("ip detected %s", ip)
-        for prefix in settings["whitelist"]:
-            if ip.startswith(prefix):
-                return True
-        return False
+    # def is_whitelisted_client(self):
+    #     # TODO: spostare nei registry o nelle properties del plugin
+    #     settings = {
+    #         "whitelist": ["10.0.", "10.1."],
+    #     }
+    #     ip = extract_ip_address_from_request(self.REQUEST)
+    #     logger.debug("ip detected %s", ip)
+    #     for prefix in settings["whitelist"]:
+    #         if ip.startswith(prefix):
+    #             return True
+    #     return False
+
+    def extractCredentials(self, request):
+        try:
+            creds = json_body(request)
+        except DeserializationError:
+            return {}
+        if creds:
+            if "otp" in creds and "login" in creds:
+                return creds
+        return {}
 
     def authenticateCredentials(self, credentials):
         """
@@ -90,19 +107,35 @@ class TFAPlugin(BasePlugin):
         if not login:
             return None
 
-        if self.is_whitelisted_client():
-            return None
+        # if self.is_whitelisted_client():
+        #     return None
 
         user = api.user.get(username=login)
         logger.debug("Found user: %s", user)
 
-        # two_factor_authentication_enabled = user.getProperty(
-        #     'enable_two_factor_authentication')
-        # logger.debug("Two-step verification enabled: {0}".format(
-        #     two_factor_authentication_enabled))
-        two_factor_authentication_enabled = True
+        two_factor_authentication_enabled = user.getProperty(
+            "two_factor_authentication_enabled", False
+        )
+        logger.debug(
+            "Two-step verification enabled: {0}".format(
+                two_factor_authentication_enabled
+            )
+        )
 
         if two_factor_authentication_enabled:
+            # if "otp" in credentials:
+            if credentials.get("extractor") == self.getId():
+                logger.debug(
+                    "OTP found %s %s",
+                    credentials,
+                    user.getProperty("two_factor_authentication_secret", None),
+                )
+                if validate_token(credentials["otp"], user=user):
+                    return (login, login)
+                else:
+                    # invalid token
+                    return None
+
             # First see, if the password is correct.
             # We do this by allowing all IAuthenticationPlugin plugins to
             # authenticate the credentials, and pick the first one that is
@@ -111,16 +144,25 @@ class TFAPlugin(BasePlugin):
             auth_plugins = pas_plugins.listPlugins(IAuthenticationPlugin)
             authorized = None
             for plugid, authplugin in auth_plugins:
+                logger.debug("auth_plugin: %s %s ", plugid, authplugin)
                 if plugid == self.getId():
                     # Avoid infinite recursion
                     continue
+                if (
+                    isinstance(authplugin, JWTAuthenticationPlugin)
+                    and "token" not in credentials
+                ):
+                    continue
+
+                # credentials.get("extractor")
+                # TODO: if jwt extractor and token in credentials verify token
 
                 try:
                     authorized = authplugin.authenticateCredentials(credentials)
                 except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
                     reraise(authplugin)
                     msg = "AuthenticationPlugin {0} error".format(plugid)
-                    logger.info(msg, exc_info=True)
+                    logger.warning(msg, exc_info=True)
                     continue
 
                 if authorized is not None:
@@ -138,58 +180,84 @@ class TFAPlugin(BasePlugin):
             # from authenticating the user before we verified the token.
             # This does produce a "Login failed" status message though that
             # we need to remove in the token validation view
+
             # TODO: se non è possibile creare/inviare il token l'autenticazione
             # deve fallire (si eliminano i dati in credentials) oppure deve
             # andare correttamente (si spostano queste due righe dentro l'if) ?
+
+            request = self.REQUEST
+
+            # TODO: if request is restapi @login
+            # if request.getHeader("Accept") == "application/json":
+            if credentials.get("extractor") == "jwt" and "token" in credentials:
+                logger.info("JWT extractor found %s", credentials)
+                return
+
             for key in list(credentials.keys()):
                 del credentials[key]
 
-            if self.create_and_deliver_token(user):
-                request = self.REQUEST
-                response = request["RESPONSE"]
+            if request.getHeader("Accept") == "application/json":
+                if user.getProperty("two_factor_authentication_secret", None):
+                    IAnnotations(request)[OTP_CHALLENGE_KEY] = {
+                        # TODO: kind of otp method (sms, voicecall, app, ...)
+                        "type": "totp",
+                        "action": "challenge",
+                        "login": user.getId(),
+                        "signature": sign_user_data(request=request, user=user, url=""),
+                    }
+                else:
+                    IAnnotations(request)[OTP_CHALLENGE_KEY] = {
+                        "type": "totp",
+                        "action": "add",
+                        "login": user.getId(),
+                        # TODO: urlencode user and domain
+                        "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={get_or_create_secret(user)}&issuer={get_domain_name()}",
+                        "signature": sign_user_data(request=request, user=user, url=""),
+                    }
+            # else:
+            #     if self.create_and_deliver_token(user):
+            #         response = request["RESPONSE"]
+            #         # Redirect to token thing...
+            #         signed_url = sign_user_data(request=request, user=user, url="@@2fa")
+            #         came_from = request.get("came_from", "")
+            #         if came_from:
+            #             signed_url = "{0}&next_url={1}".format(signed_url, came_from)
 
-                # Redirect to token thing...
-                signed_url = sign_user_data(request=request, user=user, url="@@2fa")
-                came_from = request.get("came_from", "")
-                if came_from:
-                    signed_url = "{0}&next_url={1}".format(signed_url, came_from)
-
-                # XXX: uno status message di tipo errore è necessario se si usa la popup
-                # di login, altrimenti viene automaticamente chiusa
-                api.portal.show_message("TOKEN_REQUIRED", request, type="error")
-                response.redirect(signed_url, lock=1)
-            return None
-
+            #         # XXX: uno status message di tipo errore è necessario se si usa la popup
+            #         # di login, altrimenti viene automaticamente chiusa
+            #         api.portal.show_message("TOKEN_REQUIRED", request, type="error")
+            #         response.redirect(signed_url, lock=1)
+            #     return None
         return None
 
-    def create_and_deliver_token(self, user):
-        """_summary_
+    # def create_and_deliver_token(self, user):
+    #     """_summary_
 
-        Args:
-            user (_type_): _description_
-            token (_type_): _description_
+    #     Args:
+    #         user (_type_): _description_
+    #         token (_type_): _description_
 
-        Raise:
-            ....
+    #     Raise:
+    #         ....
 
-        Returns:
-            _type_: _description_
-        """
-        # TODO: creare e spedire il token via sms all'utente. usando un adapter
-        # TODO: opzione a: si crea una form intermedia dove l'utente sceglie la modalità di
-        # token preferita (sms, voicecall, app, ...), se di modalità disponibili ce n'è solo una
-        # la pagian intermedia viene saltata
-        # TODO: opzione b: la scelta dell'utente è salvata sul suo profilo
-        user_secret = get_or_create_secret(user)
-        logger.info("User secret: %s", user_secret)
-        # TODO: per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
-        # di usare HOTP al posto di TOTP
-        # TODO: riportare in uno statusmessage l'informazione che il token è stato spedito
-        # al numero di cellulare via sms indicando le ultime cifre del numero
-        token = pyotp.TOTP(user_secret, interval=10 * 60).now()
-        logger.info("Deliver token: %s to user: %s", token, user)
-        return True
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     # TODO: creare e spedire il token via sms all'utente. usando un adapter
+    #     # TODO: opzione a: si crea una form intermedia dove l'utente sceglie la modalità di
+    #     # token preferita (sms, voicecall, app, ...), se di modalità disponibili ce n'è solo una
+    #     # la pagian intermedia viene saltata
+    #     # TODO: opzione b: la scelta dell'utente è salvata sul suo profilo
+    #     user_secret = get_or_create_secret(user)
+    #     logger.info("User secret: %s", user_secret)
+    #     # TODO: per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
+    #     # di usare HOTP al posto di TOTP
+    #     # TODO: riportare in uno statusmessage l'informazione che il token è stato spedito
+    #     # al numero di cellulare via sms indicando le ultime cifre del numero
+    #     token = pyotp.TOTP(user_secret, interval=10 * 60).now()
+    #     logger.info("Deliver token: %s to user: %s", token, user)
+    #     return True
 
 
-classImplements(TFAPlugin, IAuthenticationPlugin)
+classImplements(TFAPlugin, IAuthenticationPlugin, IExtractionPlugin)
 InitializeClass(TFAPlugin)
