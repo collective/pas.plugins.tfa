@@ -125,11 +125,6 @@ class TFAPlugin(BasePlugin):
         if two_factor_authentication_enabled:
             # if "otp" in credentials:
             if credentials.get("extractor") == self.getId():
-                logger.debug(
-                    "OTP found %s %s",
-                    credentials,
-                    user.getProperty("two_factor_authentication_secret", None),
-                )
                 if validate_token(credentials["otp"], user=user):
                     return (login, login)
                 else:
@@ -169,8 +164,6 @@ class TFAPlugin(BasePlugin):
                     # An auth plugin successfully authenticated the user
                     break
 
-            logger.info("User %s => %s", credentials, authorized)
-
             if authorized is None:
                 # No auth plugin was able to authenticate the user
                 return None
@@ -196,8 +189,16 @@ class TFAPlugin(BasePlugin):
             for key in list(credentials.keys()):
                 del credentials[key]
 
-            if request.getHeader("Accept") == "application/json":
-                if user.getProperty("two_factor_authentication_secret", None):
+            if request.getHeader("Accept") == "application/json" and not IAnnotations(
+                request
+            ).get(OTP_CHALLENGE_KEY):
+                if user.getProperty(
+                    "two_factor_authentication_secret", None
+                ) and not user.getProperty(
+                    "two_factor_authentication_secret"
+                ).startswith(
+                    "temp-"
+                ):
                     IAnnotations(request)[OTP_CHALLENGE_KEY] = {
                         # TODO: kind of otp method (sms, voicecall, app, ...)
                         "type": "totp",
@@ -206,12 +207,15 @@ class TFAPlugin(BasePlugin):
                         "signature": sign_user_data(request=request, user=user, url=""),
                     }
                 else:
+                    # TODO: anzichè salvare un secret temporaneo, inviare il secret firmato nella risposta
+                    # e verificarlo successivamente
+                    secret = get_or_create_secret(user, prefix="temp-")
                     IAnnotations(request)[OTP_CHALLENGE_KEY] = {
                         "type": "totp",
                         "action": "add",
                         "login": user.getId(),
                         # TODO: urlencode user and domain
-                        "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={get_or_create_secret(user)}&issuer={get_domain_name()}",
+                        "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={secret}",
                         "signature": sign_user_data(request=request, user=user, url=""),
                     }
             # else:

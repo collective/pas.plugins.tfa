@@ -16,9 +16,8 @@ class Login(BaseLogin):
                 "action": otp_challenge.get("action", "challenge"),
                 "type": otp_challenge.get("type"),
                 "login": otp_challenge.get("login"),
-                "form": self.request.form,
+                # "form": self.request.form,
                 "qr_code": otp_challenge.get("qr_code"),
-                "data": otp_challenge,
             }
         if "otp" in data and not api.user.is_anonymous():
             # user is authenticated with pas, generate a new auth_token

@@ -59,7 +59,7 @@ def sign_url(login, secret_key, lifetime=SIGNATURE_LIFETIME, url=""):
     return signed_url
 
 
-def get_or_create_secret(user=None, overwrite=False):
+def get_or_create_secret(user=None, overwrite=False, prefix=""):
     """
     Gets or creates token secret for the user given. Checks first if user
     given has a ``secret`` generated.
@@ -75,10 +75,13 @@ def get_or_create_secret(user=None, overwrite=False):
     if not overwrite:
         secret = user.getProperty("two_factor_authentication_secret", None)
         if isinstance(secret, str) and secret:
+            if secret.startswith(prefix):
+                secret = secret[len(prefix) :]  # noqa
             return secret
     secret = pyotp.random_base32()
-    # TODO p.protect.safeWrite ?
-    user.setMemberProperties(mapping={"two_factor_authentication_secret": secret})
+    user.setMemberProperties(
+        mapping={"two_factor_authentication_secret": f"{prefix}{secret}"}
+    )
     return secret
 
 
@@ -124,6 +127,8 @@ def get_secret_key(request=None, user_secret=None, user=None):
         if user is None:
             user = api.user.get_current()
         user_secret = user.getProperty("two_factor_authentication_secret")
+        if user_secret and user_secret.startswith("temp-"):
+            user_secret = user_secret[5:]
     manager = getUtility(IKeyManager)
     system_secret_key = manager.secret()
     return "{}{}".format(user_secret, system_secret_key)
@@ -169,7 +174,12 @@ def validate_user_data(request, user):
     :param Products.PlonePAS.tools.memberdata user:
     :return SignatureValidationResult:
     """
-    secret_key = get_secret_key(request=request, user=user)
+    user_secret = get_secret_key(request=request, user=user)
+    if user_secret and user_secret.startswith("temp-"):
+        user_secret = user_secret[5:]
+        user_secret_temp = True
+    else:
+        user_secret_temp = False
     login = request.get("login")
     valid_until = int(request.get("valid_until"))
     reason = []
@@ -178,16 +188,20 @@ def validate_user_data(request, user):
         result = False
     else:
         signature = sign_data(
-            secret_key=secret_key, login=login, valid_until=valid_until
+            secret_key=user_secret, login=login, valid_until=valid_until
         )
         logger.debug(
             "V Signature: %s %s %s => %s",
-            secret_key,
+            user_secret,
             login,
             valid_until,
             signature,
         )
         if signature == request.get("signature"):
+            if user_secret_temp:
+                user.setMemberProperties(
+                    {"two_factor_authentication_secret": user_secret}
+                )
             result = True
         else:
             reason.append("invalid signature")
@@ -248,13 +262,21 @@ def validate_token(token, user=None, user_secret=None, interval=30):
         if user is None:
             user = api.user.get_current()
         user_secret = user.getProperty("two_factor_authentication_secret")
+        if user_secret and user_secret.startswith("temp-"):
+            user_secret = user_secret[5:]
+            user_secret_temp = True
+        else:
+            user_secret_temp = False
+
     # TODO: il token va validato secondo l'algoritmo definito dal 'device' impostato
     # per l'user per gli SMS  si potrebbe eventualmente pensare di usare HOTP al posto
     # di TOTP, per ovviare al problema del tempo di validità del token
     validation_result = pyotp.TOTP(user_secret, interval=interval).verify(token)
-    logger.info(
+    logger.debug(
         "validate_token: token: %s %s %s", user_secret, token, validation_result
     )
+    if user_secret_temp and validation_result:
+        user.setMemberProperties({"two_factor_authentication_secret": user_secret})
     return validation_result
 
 
