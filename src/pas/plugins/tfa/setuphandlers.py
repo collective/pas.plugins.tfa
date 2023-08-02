@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
+import os
+
+import plone.app.users.browser.schemaeditor as ttw
+import six
+from lxml import etree, objectify
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.interfaces import INonInstallable
+from Products.CMFPlone.utils import safe_encode
 from zope.interface import implementer
+
+import pas.plugins.tfa as pptfa
 
 from . import logger
 from .plugins import TFAPlugin
@@ -65,6 +73,24 @@ def post_install(context):
             for obj in plugins.listPlugins(iface):
                 plugins.movePluginsUp(iface, [PLUGIN_ID])
             logger.info("Moved %s to top of %s.", PLUGIN_ID, interface_name)
+
+    # read the actual schema
+    xml_string_schema = ttw.serialize_ttw_schema()
+    root = objectify.fromstring(xml_string_schema)
+    # check if fields are already there
+    actual_field_names = [x.get("name") for x in root.schema.field]
+    if "two_factor_authentication_enabled" not in actual_field_names:
+        base_path = os.path.dirname(pptfa.__file__)
+        file_path = "profiles/default/addtouserschema.xml"
+        new_fields = open(os.path.join(base_path, file_path)).read()
+        new_fields_xml = objectify.fromstring(new_fields.encode("utf-8"))
+        for field in new_fields_xml.schema.field:
+            root.schema.append(field)
+        new_xml_string_schema = etree.tostring(root, pretty_print=True)
+
+        if six.PY3 and isinstance(new_xml_string_schema, bytes):
+            new_xml_string_schema = new_xml_string_schema.decode("utf-8")
+        ttw.applySchema(new_xml_string_schema)
 
 
 def uninstall(context):

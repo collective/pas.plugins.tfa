@@ -9,11 +9,11 @@
           Enable two factor authentication for this user.
       </description>
       <required>False</required>
-      <title i18n:translate="label_homepage">Two Factor Authentication</title>
+      <title i18n:translate="label_two_factor_authentication_enabled">Two Factor Authentication</title>
     </field>
     <field name="two_factor_authentication_secret" type="zope.schema.TextLine">
       <required>False</required>
-      <title i18n:translate="label_homepage">Two Factor Secret</title>
+      <title i18n:translate="label_two_factor_authentication_secret">Two Factor Secret</title>
     </field>
   </schema>
 </model>
