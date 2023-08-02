@@ -258,6 +258,7 @@ def validate_token(token, user=None, user_secret=None, interval=30):
     :param string token:
     :return bool:
     """
+    user_secret_temp = False
     if user_secret is None:
         if user is None:
             user = api.user.get_current()
