@@ -10,13 +10,15 @@ from zope.component import getUtility
 from zope.globalrequest import getRequest
 from zope.i18n import translate
 from urllib.parse import urlparse
-
+from urllib.parse import urlencode
 from . import logger
 
 SIGNATURE_LIFETIME = 600
 
 
 def sign_data(**kwargs):
+    if kwargs.get("secret_key"):
+        kwargs["secret_key"] = kwargs["secret_key"].replace("temp-", "")
     signature = hashlib.sha256(
         "&".join("{}={}".format(k, v) for k, v in sorted(kwargs.items())).encode()
     ).hexdigest()
@@ -85,7 +87,7 @@ def get_or_create_secret(user=None, overwrite=False, prefix=""):
     return secret
 
 
-def sign_user_data(request=None, user=None, url="@@2fa-login"):
+def sign_user_data(request=None, user=None, url="@@tfa"):
     """
     Signs the user data.
 
@@ -302,9 +304,30 @@ def extract_ip_address_from_request(request=None):
     # return ipaddress.ip_address(ip)
 
 
-def get_domain_name():
+def get_domain_name(request):
     """
     Gets domain name.
     """
     parsed_uri = urlparse(api.portal.get().absolute_url())
     return parsed_uri.netloc.split(":")[0]
+
+
+def get_barcode_image(username, domain, secret):
+    """
+    Get barcode image URL.
+
+    :param string username:
+    :param string domain:
+    :param string secret:
+    :return string:
+    """
+    params = urlencode(
+        {
+            "chs": "200x200",
+            "chld": "M|0",
+            "cht": "qr",
+            "chl": "otpauth://totp/{0}@{1}?secret={2}".format(username, domain, secret),
+        }
+    )
+    url = "https://chart.googleapis.com/chart?{0}".format(params)
+    return url

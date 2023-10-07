@@ -9,7 +9,7 @@ import logging
 try:
     from iw.rejectanonymous import addValidSubparts
 
-    addValidSubparts("@@2fa")
+    addValidSubparts("@@tfa")
 except ImportError:
     pass
 

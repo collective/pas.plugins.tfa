@@ -19,11 +19,18 @@
       /> -->
 
     <!-- -*- token validation form -*- -->
-    <!-- <browser:page
-        name="2fa"
+    <browser:page
+        name="tfa"
         for="*"
         permission="zope2.View"
         class=".views.TokenFormView"
-        /> -->
+        />
+
+    <browser:page
+        name="tfa-add"
+        for="*"
+        permission="zope2.View"
+        class=".views.TokenFormAddView"
+        />
 
 </configure>
