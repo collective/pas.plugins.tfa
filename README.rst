@@ -33,6 +33,8 @@ pas.plugins.tfa
 
 This add-on is heavily inspired by and built upon collective.googleauthetnicator (major credit goes to its contributors).
 
+This is a requirement for the https://github.com/collective/volto-tfa Volto plugin.
+
 Features
 --------
 

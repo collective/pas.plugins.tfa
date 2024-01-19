@@ -2,7 +2,7 @@
 from plone.restapi.deserializer import json_body
 from plone.restapi.services.users.update import UsersPatch as UsersPatchBase
 from pas.plugins.tfa.helpers import validate_token
-
+from plone.restapi import _
 
 class UsersPatch(UsersPatchBase):
     def reply(self):
@@ -15,5 +15,9 @@ class UsersPatch(UsersPatchBase):
                 data["two_factor_authentication_otp"],
                 user_secret=data["two_factor_authentication_secret"],
             ):
-                raise Exception("Invalid OTP")
+                return self._error(
+                    400,
+                    "Bad Request",
+                    _("OTP Value is invalid"),
+                )
         return super().reply()
