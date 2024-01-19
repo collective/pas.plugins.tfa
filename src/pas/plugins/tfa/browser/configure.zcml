@@ -11,12 +11,12 @@
       layer="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
       /> -->
 
-  <!-- Publish static files -->
-  <!-- <plone:static
+    <!-- Publish static files -->
+    <plone:static
       name="pas.plugins.tfa"
       type="plone"
       directory="static"
-      /> -->
+      />
 
     <!-- -*- token validation form -*- -->
     <browser:page

@@ -3,6 +3,12 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     i18n:domain="pas.plugins.tfa">
 
-<!-- -*- extra stuff goes here -*- -->
+  <records interface="plone.base.interfaces.resources.IBundleRegistry" prefix="plone.bundles/pas-plugins-tfa">
+    <value key="enabled">True</value>
+    <value key="jscompilation">++plone++pas.plugins.tfa/js/main.min.js</value>
+    <value key="load_async">False</value>
+    <value key="load_defer">False</value>
+    <value key="depends">plone</value>
+  </records>
 
 </registry>
