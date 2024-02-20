@@ -7,12 +7,16 @@ from Products.statusmessages.interfaces import IStatusMessage
 from z3c.form import button
 from z3c.form import field
 from z3c.form import form
+from plone.autoform import directives
 from zope.schema import TextLine
 
 from .. import logger
 from ..helpers import drop_login_failed_msg
 from ..helpers import validate_token
 from ..helpers import validate_user_data
+from ..helpers import get_barcode_image
+from ..helpers import get_or_create_secret
+from ..helpers import get_domain_name
 from .. import _
 from .. import PMF
 
@@ -21,6 +25,27 @@ class ITokenForm(model.Schema):
     """
     Interface for the 2FA Token validation form.
     """
+
+    token = TextLine(
+        title=_("Enter code"),
+        description=_("Enter the verification code."),
+        required=True,
+    )
+
+
+class ITokenFormAdd(model.Schema):
+    """
+    Interface for the 2FA Token validation form.
+    """
+
+    # The qr_code field isn't used as a input field, instead it is used to show the QR code
+    # TODO: change it (?)
+    directives.mode(qr_code="display")
+    qr_code = TextLine(
+        title=_("QR Code"),
+        description=_("Scan this QR code with your device."),
+        required=False,
+    )
 
     token = TextLine(
         title=_("Enter code"),
@@ -88,7 +113,7 @@ class TokenForm(AutoExtensibleForm, form.Form):
                 )
                 return
 
-        logger.info("validate token %s %s", user, token)
+        logger.debug("validate token %s %s", user, token)
         valid_token = validate_token(token, user=user)
         # self.context.plone_log(valid_token)
         # self.context.plone_log(token)
@@ -138,5 +163,29 @@ class TokenForm(AutoExtensibleForm, form.Form):
         return super(TokenForm, self).updateFields(*args, **kwargs)
 
 
+class TokenFormAdd(TokenForm):
+    fields = field.Fields(ITokenFormAdd)
+
+    def updateFields(self, *args, **kwargs):
+        super().updateFields(*args, **kwargs)
+        # Adding a proper description (with bar code image)
+        barcode_field = self.fields.get("qr_code")
+        # TODO: verifiy signature
+        login = self.request.get("login", "")
+        if login:
+            user = api.user.get(username=login)
+        else:
+            user = api.user.get_current()
+        secret = get_or_create_secret(user, prefix="temp-")
+        if barcode_field:
+            # TODO: username, login or userid (?)
+            barcode_field.field.description = f"""<div><img src="{get_barcode_image(
+            user.getId(),
+            get_domain_name(self.request),
+            secret,
+        )}" alt="QR Code" /></div>"""
+
+
 # View for the ``TokenForm``.
+TokenFormAddView = wrap_form(TokenFormAdd)
 TokenFormView = wrap_form(TokenForm)

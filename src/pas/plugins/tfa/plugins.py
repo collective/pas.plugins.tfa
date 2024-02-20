@@ -102,7 +102,6 @@ class TFAPlugin(BasePlugin):
         page (having the user and pass remembered), where we check for the
         token submitted. If the token is valid too, we log the user in.
         """
-
         login = credentials.get("login")
         if not login:
             return None
@@ -112,6 +111,8 @@ class TFAPlugin(BasePlugin):
 
         user = api.user.get(username=login)
         logger.debug("Found user: %s", user)
+        if not user:
+            return None
 
         two_factor_authentication_enabled = user.getProperty(
             "two_factor_authentication_enabled", False
@@ -183,15 +184,51 @@ class TFAPlugin(BasePlugin):
             # TODO: if request is restapi @login
             # if request.getHeader("Accept") == "application/json":
             if credentials.get("extractor") == "jwt" and "token" in credentials:
-                logger.info("JWT extractor found %s", credentials)
+                logger.debug("JWT extractor found %s", credentials)
                 return
 
-            for key in list(credentials.keys()):
-                del credentials[key]
+            credentials.clear()
+            # for key in list(credentials.keys()):
+            #     del credentials[key]
 
-            if request.getHeader("Accept") == "application/json" and not IAnnotations(
-                request
-            ).get(OTP_CHALLENGE_KEY):
+            if request.getHeader("Accept") == "application/json":
+                # restapi / volto
+                if not IAnnotations(request).get(OTP_CHALLENGE_KEY):
+                    if user.getProperty(
+                        "two_factor_authentication_secret", None
+                    ) and not user.getProperty(
+                        "two_factor_authentication_secret"
+                    ).startswith(
+                        "temp-"
+                    ):
+                        IAnnotations(request)[OTP_CHALLENGE_KEY] = {
+                            # TODO: kind of otp method (sms, voicecall, app, ...)
+                            "type": "totp",
+                            "action": "challenge",
+                            "login": user.getId(),
+                            "signature": sign_user_data(
+                                request=request, user=user, url=""
+                            ),
+                        }
+                    else:
+                        # TODO: instead of creating a temporary secret, send the signed secret in the response
+                        # and verify it later (?)
+                        # FIX: if I start to add a new secret, the old one is lost
+                        secret = get_or_create_secret(user, prefix="temp-")
+                        IAnnotations(request)[OTP_CHALLENGE_KEY] = {
+                            "type": "totp",
+                            "action": "add",
+                            "login": user.getId(),
+                            # TODO: urlencode user and domain
+                            "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={secret}",
+                            "signature": sign_user_data(
+                                request=request, user=user, url=""
+                            ),
+                        }
+            else:
+                # Plone / CLassic UI
+                # if self.create_and_deliver_token(user):
+                response = request["RESPONSE"]
                 if user.getProperty(
                     "two_factor_authentication_secret", None
                 ) and not user.getProperty(
@@ -199,39 +236,23 @@ class TFAPlugin(BasePlugin):
                 ).startswith(
                     "temp-"
                 ):
-                    IAnnotations(request)[OTP_CHALLENGE_KEY] = {
-                        # TODO: kind of otp method (sms, voicecall, app, ...)
-                        "type": "totp",
-                        "action": "challenge",
-                        "login": user.getId(),
-                        "signature": sign_user_data(request=request, user=user, url=""),
-                    }
+                    signed_url = sign_user_data(request=request, user=user, url="@@tfa")
                 else:
-                    # TODO: anzichè salvare un secret temporaneo, inviare il secret firmato nella risposta
-                    # e verificarlo successivamente
-                    secret = get_or_create_secret(user, prefix="temp-")
-                    IAnnotations(request)[OTP_CHALLENGE_KEY] = {
-                        "type": "totp",
-                        "action": "add",
-                        "login": user.getId(),
-                        # TODO: urlencode user and domain
-                        "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={secret}",
-                        "signature": sign_user_data(request=request, user=user, url=""),
-                    }
-            # else:
-            #     if self.create_and_deliver_token(user):
-            #         response = request["RESPONSE"]
-            #         # Redirect to token thing...
-            #         signed_url = sign_user_data(request=request, user=user, url="@@2fa")
-            #         came_from = request.get("came_from", "")
-            #         if came_from:
-            #             signed_url = "{0}&next_url={1}".format(signed_url, came_from)
+                    # TODO: instead of creating a temporary secret, send the signed secret in the response
+                    # and verify it later (?)
+                    # FIX: if I start to add a new secret, the old one is lost
+                    signed_url = sign_user_data(
+                        request=request, user=user, url="@@tfa-add"
+                    )
+                came_from = request.get("came_from", "")
+                if came_from:
+                    signed_url = "{0}&next_url={1}".format(signed_url, came_from)
 
-            #         # XXX: uno status message di tipo errore è necessario se si usa la popup
-            #         # di login, altrimenti viene automaticamente chiusa
-            #         api.portal.show_message("TOKEN_REQUIRED", request, type="error")
-            #         response.redirect(signed_url, lock=1)
-            #     return None
+                # XXX: an error status message is needed if using the login popup,
+                # otherwise it is automatically closed
+                api.portal.show_message("TOKEN_REQUIRED", request, type="error")
+                response.redirect(signed_url, lock=1)
+                return None
         return None
 
     # def create_and_deliver_token(self, user):
@@ -253,13 +274,13 @@ class TFAPlugin(BasePlugin):
     #     # la pagian intermedia viene saltata
     #     # TODO: opzione b: la scelta dell'utente è salvata sul suo profilo
     #     user_secret = get_or_create_secret(user)
-    #     logger.info("User secret: %s", user_secret)
+    #     logger.debug("User secret: %s", user_secret)
     #     # TODO: per gli SMS mettiamo 10 minuti di validità, si potrebbe eventualmente anche pensare
     #     # di usare HOTP al posto di TOTP
     #     # TODO: riportare in uno statusmessage l'informazione che il token è stato spedito
     #     # al numero di cellulare via sms indicando le ultime cifre del numero
     #     token = pyotp.TOTP(user_secret, interval=10 * 60).now()
-    #     logger.info("Deliver token: %s to user: %s", token, user)
+    #     logger.debug("Deliver token: %s to user: %s", token, user)
     #     return True
 
 
