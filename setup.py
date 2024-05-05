@@ -67,6 +67,7 @@ setup(
         "plone.keyring",
         "Zope",
         "z3c.form",
+        "qrcode",
     ],
     extras_require={
         "test": [
