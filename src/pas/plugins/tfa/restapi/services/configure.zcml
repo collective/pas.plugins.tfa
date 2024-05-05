@@ -1,23 +1,24 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
-    xmlns:plone="http://namespaces.plone.org/plone">
+    xmlns:plone="http://namespaces.plone.org/plone"
+    >
 
   <plone:service
-      name="@login"
-      for="plone.base.interfaces.IPloneSiteRoot"
+      method="POST"
       factory=".login.Login"
+      for="plone.base.interfaces.IPloneSiteRoot"
       permission="zope.Public"
       layer="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
-      method="POST"
+      name="@login"
       />
 
   <plone:service
-      name="@users"
-      for="Products.CMFCore.interfaces.ISiteRoot"
+      method="PATCH"
       factory=".update.UsersPatch"
+      for="Products.CMFCore.interfaces.ISiteRoot"
       permission="zope2.View"
       layer="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
-      method="PATCH"
+      name="@users"
       />
 
 </configure>
