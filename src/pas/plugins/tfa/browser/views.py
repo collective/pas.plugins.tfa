@@ -166,21 +166,15 @@ class TokenFormAdd(TokenForm):
 
     def updateFields(self, *args, **kwargs):
         super().updateFields(*args, **kwargs)
-
         # Adding a proper description (with bar code image)
         barcode_field = self.fields.get("qr_code")
-
         # TODO: verify signature
         login = self.request.get("login", "")
-
         if login:
             user = api.user.get(username=login)
         else:
             user = api.user.get_current()
-
-        # write with CSRF fails
         secret = get_or_create_secret(user, prefix="temp-")
-
         if barcode_field:
             # TODO: username, login or userid (?)
             barcode_field.field.description = f"""<div><img src="data:image/png;base64,{get_barcode_image(
