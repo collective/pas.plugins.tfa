@@ -74,8 +74,6 @@ setup(
             "plone.testing>=5.0.0",
             "plone.app.testing",
             "plone.testing",
-            "plone.app.contenttypes",
-            "robotsuite",
             "plone.browserlayer",
             "plone.base",
             "plone.app.robotframework[debug]",
