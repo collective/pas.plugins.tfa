@@ -1,6 +1,7 @@
 graft src/pas
 
 include *.md
+include *.yaml
 include *.yml
 include .coveragerc
 
