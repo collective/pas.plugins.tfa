@@ -1,15 +1,17 @@
 from . import logger
+from io import BytesIO
 from plone import api
 from plone.keyring.interfaces import IKeyManager
 from Products.statusmessages.interfaces import IStatusMessage
-from urllib.parse import urlencode
 from urllib.parse import urlparse
 from zope.component import getUtility
 from zope.globalrequest import getRequest
 from zope.i18n import translate
 
+import base64
 import hashlib
 import pyotp
+import qrcode
 import time
 
 
@@ -321,6 +323,7 @@ def get_barcode_image(username, domain, secret):
     :param string secret:
     :return string:
     """
+    """
     params = urlencode(
         {
             "chs": "200x200",
@@ -329,5 +332,14 @@ def get_barcode_image(username, domain, secret):
             "chl": f"otpauth://totp/{username}@{domain}?secret={secret}",
         }
     )
-    url = f"https://chart.googleapis.com/chart?{params}"
-    return url
+    # dont use google for generation
+    # url = f"https://chart.googleapis.com/chart?{params}"
+    """
+
+    # use qrcode from pypi as inline base64 image
+    url = f"otpauth://totp/{username}@{domain}?secret={secret}"
+    image = qrcode.make(url)
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    img_str = base64.b64encode(buffer.getvalue())
+    return img_str.decode("utf-8")
