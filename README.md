@@ -6,6 +6,7 @@
   - [Setting up 2FA in ClassicUI](#setting-up-2fa-in-classicui)
   - [Test the package in a Testenvironment](#test-the-package-in-a-testenvironment)
   - [Development](#development)
+    - [Documentation of changes](#documentation-of-changes)
   - [Authors](#authors)
   - [Contributors](#contributors)
   - [Contribute](#contribute)
@@ -129,6 +130,18 @@ run all together
 tox
 ```
 
+### Documentation of changes
+
+we use towncrier
+
+add a news snippet like `xx.bugfix` in `news/`
+
+the content of the file should be a short description of your work
+
+```
+describe your work shortly @username 
+
+```
 
 ## Authors
 
