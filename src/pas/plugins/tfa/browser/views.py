@@ -168,7 +168,7 @@ class TokenFormAdd(TokenForm):
         super().updateFields(*args, **kwargs)
         # Adding a proper description (with bar code image)
         barcode_field = self.fields.get("qr_code")
-        # TODO: verifiy signature
+        # TODO: verify signature
         login = self.request.get("login", "")
         if login:
             user = api.user.get(username=login)

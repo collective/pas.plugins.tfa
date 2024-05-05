@@ -44,13 +44,13 @@ manage_addTwoFactorAutenticationPluginForm = PageTemplateFile(
 
 def addTwoFactorAutenticationAuthenticatorPlugin(self, id, title="", REQUEST=None):
     """
-    Add a Two Factor Autentication PAS Plugin to Plone PAS
+    Add a Two Factor Authentication PAS Plugin to Plone PAS
     """
     o = TFAPlugin(id, title)
     self._setObject(o.getId(), o)
 
     if REQUEST is not None:
-        msg = "Two+Factor+Autentication+PAS+Plugin+added."
+        msg = "Two+Factor+Authentication+PAS+Plugin+added."
         REQUEST["RESPONSE"].redirect(
             f"{self.absolute_url()}/manage_main?manage_tabs_message={msg}"
         )
@@ -61,7 +61,7 @@ class TFAPlugin(BasePlugin):
     TFA PAS Plugin
     """
 
-    meta_type = "Collective Two Factor Autentication PAS"
+    meta_type = "Collective Two Factor Authentication PAS"
     security = ClassSecurityInfo()
 
     def __init__(self, id, title=None):
@@ -175,9 +175,9 @@ class TFAPlugin(BasePlugin):
             # This does produce a "Login failed" status message though that
             # we need to remove in the token validation view
 
-            # TODO: se non è possibile creare/inviare il token l'autenticazione
-            # deve fallire (si eliminano i dati in credentials) oppure deve
-            # andare correttamente (si spostano queste due righe dentro l'if) ?
+            # TODO: if the token cannot be created/sent, should the authentication
+            # fail (you delete the data in credentials) or should it go
+            # correctly (you move these two lines into the if) ?
 
             request = self.REQUEST
 
