@@ -7,9 +7,9 @@ from setuptools import setup
 
 long_description = "\n\n".join(
     [
-        open("README.rst").read(),
-        open("CONTRIBUTORS.rst").read(),
-        open("CHANGES.rst").read(),
+        open("README.md").read(),
+        open("CONTRIBUTORS.md").read(),
+        open("CHANGES.md").read(),
     ]
 )
 
@@ -19,19 +19,19 @@ setup(
     version="1.0a1",
     description="An add-on for Plone",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     # Get more from https://pypi.org/classifiers/
     classifiers=[
+        "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
         "Framework :: Plone",
         "Framework :: Plone :: Addon",
-        "Framework :: Plone :: 5.2",
         "Framework :: Plone :: 6.0",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
     ],
@@ -51,7 +51,7 @@ setup(
     package_dir={"": "src"},
     include_package_data=True,
     zip_safe=False,
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=[
         "setuptools",
         # -*- Extra requirements: -*-
@@ -64,9 +64,6 @@ setup(
     extras_require={
         "test": [
             "plone.app.testing",
-            # Plone KGS does not use this version, because it would break
-            # Remove if your package shall be part of coredev.
-            # plone_coredev tests as of 2016-04-01.
             "plone.testing",  # >=5.0.0",
             "plone.app.contenttypes",
             "plone.app.robotframework[debug]",
