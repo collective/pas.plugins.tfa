@@ -4,3 +4,11 @@
 [meta]
 template = "default"
 commit-id = "1c2155e4"
+
+[tox]
+use_mxdev = true
+
+[pre_commit]
+i18ndude_extra_lines = """
+        pass_filenames: false
+"""
