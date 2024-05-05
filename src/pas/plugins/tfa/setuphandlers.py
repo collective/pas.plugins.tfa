@@ -1,7 +1,7 @@
 from . import logger
 from .plugins import TFAPlugin
+from plone.base.interfaces import INonInstallable
 from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.interfaces import INonInstallable
 from zope.interface import implementer
 
 

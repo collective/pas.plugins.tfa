@@ -3,17 +3,9 @@
 from pas.plugins.tfa import helpers
 from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_INTEGRATION_TESTING  # noqa: E501
 from plone import api
+from plone.base.utils import get_installer
 
 import unittest
-
-
-try:
-    # Plone 5.1+
-    from Products.CMFPlone.utils import get_installer
-except ImportError:
-    # Plone 5.0/4.3
-    def get_installer(context, request=None):
-        return api.portal.get_tool("portal_quickinstaller")
 
 
 class TestSetup(unittest.TestCase):
