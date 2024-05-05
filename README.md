@@ -38,7 +38,7 @@ Go the Plone control panel and install "pas.plugins.tfa"
 To enable 2FA for a particular user, go to the Users control panel, select a
 user and check 'Two Factor Authentication'.
 
-Once enbaled a user will be prompted to configure their 2FA code the next time
+Once enabled a user will be prompted to configure their 2FA code the next time
 they login.
 
 
