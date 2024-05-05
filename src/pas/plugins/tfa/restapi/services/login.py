@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
+from pas.plugins.tfa.interfaces import OTP_CHALLENGE_KEY
+from plone import api
 from plone.restapi.deserializer import json_body
 from plone.restapi.services.auth.login import Login as BaseLogin
 from plone.restapi.services.auth.renew import Renew
-from plone import api
 from zope.annotation.interfaces import IAnnotations
-from pas.plugins.tfa.interfaces import OTP_CHALLENGE_KEY
 
 
 class Login(BaseLogin):

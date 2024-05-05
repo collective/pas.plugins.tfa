@@ -1,5 +1,14 @@
-# -*- coding: utf-8 -*-
+from .. import _
+from .. import logger
+from .. import PMF
+from ..helpers import drop_login_failed_msg
+from ..helpers import get_barcode_image
+from ..helpers import get_domain_name
+from ..helpers import get_or_create_secret
+from ..helpers import validate_token
+from ..helpers import validate_user_data
 from plone import api
+from plone.autoform import directives
 from plone.autoform.form import AutoExtensibleForm
 from plone.supermodel import model
 from plone.z3cform.layout import wrap_form
@@ -7,18 +16,7 @@ from Products.statusmessages.interfaces import IStatusMessage
 from z3c.form import button
 from z3c.form import field
 from z3c.form import form
-from plone.autoform import directives
 from zope.schema import TextLine
-
-from .. import logger
-from ..helpers import drop_login_failed_msg
-from ..helpers import validate_token
-from ..helpers import validate_user_data
-from ..helpers import get_barcode_image
-from ..helpers import get_or_create_secret
-from ..helpers import get_domain_name
-from .. import _
-from .. import PMF
 
 
 class ITokenForm(model.Schema):
@@ -68,7 +66,7 @@ class TokenForm(AutoExtensibleForm, form.Form):
     description = _("Confirm your login by entering the verification " "token.")
 
     def action(self):
-        return "{0}?{1}".format(
+        return "{}?{}".format(
             self.request.getURL(), self.request.get("QUERY_STRING", "")
         )
 
@@ -105,7 +103,7 @@ class TokenForm(AutoExtensibleForm, form.Form):
                 # TODO: se c'è il rendering e non un redirect, lo status message viene perso
                 IStatusMessage(self.request).addStatusMessage(
                     _(
-                        "Invalid data. Details: {0}".format(
+                        "Invalid data. Details: {}".format(
                             " ".join(user_data_validation_result.reason)
                         )
                     ),
@@ -160,7 +158,7 @@ class TokenForm(AutoExtensibleForm, form.Form):
         if token_field:
             token_field.field.description = _("Enter the verification code.")
 
-        return super(TokenForm, self).updateFields(*args, **kwargs)
+        return super().updateFields(*args, **kwargs)
 
 
 class TokenFormAdd(TokenForm):

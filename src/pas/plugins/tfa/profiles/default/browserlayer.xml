@@ -1,7 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <layers>
-  <layer
-      name="pas.plugins.tfa"
-      interface="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
-      />
+  <layer interface="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
+         name="pas.plugins.tfa"
+  />
 </layers>

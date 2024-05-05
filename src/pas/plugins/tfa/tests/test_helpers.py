@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 """Setup tests for this package."""
-from plone import api
-from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_INTEGRATION_TESTING  # noqa: E501
+
 from pas.plugins.tfa import helpers
+from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_INTEGRATION_TESTING  # noqa: E501
+from plone import api
 
 import unittest
 

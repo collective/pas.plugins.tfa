@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-from plone.restapi.deserializer import json_body
-from plone.restapi.services.users.update import UsersPatch as UsersPatchBase
 from pas.plugins.tfa.helpers import validate_token
 from plone.restapi import _
+from plone.restapi.deserializer import json_body
+from plone.restapi.services.users.update import UsersPatch as UsersPatchBase
+
 
 class UsersPatch(UsersPatchBase):
     def reply(self):

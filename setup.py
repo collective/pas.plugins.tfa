@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Installer for the pas.plugins.tfa package."""
 
 from setuptools import find_packages

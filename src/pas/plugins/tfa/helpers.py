@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
-import hashlib
-import time
-
+from . import logger
 from plone import api
 from plone.keyring.interfaces import IKeyManager
 from Products.statusmessages.interfaces import IStatusMessage
-import pyotp
+from urllib.parse import urlencode
+from urllib.parse import urlparse
 from zope.component import getUtility
 from zope.globalrequest import getRequest
 from zope.i18n import translate
-from urllib.parse import urlparse
-from urllib.parse import urlencode
-from . import logger
+
+import hashlib
+import pyotp
+import time
+
 
 SIGNATURE_LIFETIME = 600
 
@@ -20,7 +20,7 @@ def sign_data(**kwargs):
     if kwargs.get("secret_key"):
         kwargs["secret_key"] = kwargs["secret_key"].replace("temp-", "")
     signature = hashlib.sha256(
-        "&".join("{}={}".format(k, v) for k, v in sorted(kwargs.items())).encode()
+        "&".join(f"{k}={v}" for k, v in sorted(kwargs.items())).encode()
     ).hexdigest()
     return signature
 
@@ -133,7 +133,7 @@ def get_secret_key(request=None, user_secret=None, user=None):
             user_secret = user_secret[5:]
     manager = getUtility(IKeyManager)
     system_secret_key = manager.secret()
-    return "{}{}".format(user_secret, system_secret_key)
+    return f"{user_secret}{system_secret_key}"
 
 
 def drop_login_failed_msg(request):
@@ -162,7 +162,7 @@ def drop_login_failed_msg(request):
         status_messages.add(msg.message, msg.type)
 
 
-class SignatureValidationResult(object):
+class SignatureValidationResult:
     def __init__(self, result, reason=""):
         self.result = result
         self.reason = reason
@@ -326,8 +326,8 @@ def get_barcode_image(username, domain, secret):
             "chs": "200x200",
             "chld": "M|0",
             "cht": "qr",
-            "chl": "otpauth://totp/{0}@{1}?secret={2}".format(username, domain, secret),
+            "chl": f"otpauth://totp/{username}@{domain}?secret={secret}",
         }
     )
-    url = "https://chart.googleapis.com/chart?{0}".format(params)
+    url = f"https://chart.googleapis.com/chart?{params}"
     return url
