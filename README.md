@@ -1,3 +1,17 @@
+- [pas.plugins.tfa](#paspluginstfa)
+  - [Features](#features)
+  - [Installation](#installation)
+    - [via buildout](#via-buildout)
+    - [via pip](#via-pip)
+  - [Setting up 2FA in ClassicUI](#setting-up-2fa-in-classicui)
+  - [Test the package in a Testenvironment](#test-the-package-in-a-testenvironment)
+  - [Development](#development)
+  - [Authors](#authors)
+  - [Contributors](#contributors)
+  - [Contribute](#contribute)
+  - [Support](#support)
+  - [License](#license)
+
 # pas.plugins.tfa
 
 This is a requirement for the https://github.com/collective/volto-tfa Volto plugin.
@@ -27,7 +41,9 @@ anything further. Continue with the [installation instructions for volto-tfa](ht
 
 ### via pip
 
-... TODO: install instructions if package released on pypi
+checkout the package and install it via
+
+`pip install -e .`
 
 ## Setting up 2FA in ClassicUI
 
@@ -41,6 +57,78 @@ user and check 'Two Factor Authentication'.
 Once enabled a user will be prompted to configure their 2FA code the next time
 they login.
 
+## Test the package in a Testenvironment
+
+```
+python3 -m venv ./venv
+source venv/bin/activate
+pip install cookiecutter
+pip install mxdev
+mxdev -c mx.ini
+pip install -r requirements-mxdev.txt
+cookiecutter -f --no-input --config-file instance.yaml https://github.com/plone/cookiecutter-zope-instance
+runwsgi -v instance/etc/zope.ini
+deactivate 
+```
+
+## Development
+
+we use tox
+
+```
+python3 -m venv ./venv
+source venv/bin/activate
+tox -e init
+```
+
+Format the code run 
+
+```
+tox -e format
+```
+
+Lint the code run 
+
+```
+tox -e lint
+```
+
+Run tests
+
+```
+tox -e test
+```
+
+Run code coverage
+
+```
+tox -e coverage
+```
+
+check dependencies
+
+```
+tox -e dependencies
+```
+
+check circular dependencies
+
+```
+tox -e circular
+```
+
+check release   
+
+```
+tox -e release-check
+```
+
+run all together
+
+```
+tox
+```
+
 
 ## Authors
 
@@ -51,12 +139,12 @@ Initial plugin development by:
 Mauro Amico (https://github.com/mamico)
 
 
-
 ## Contributors
 
 Put your name here, you deserve it!
 
 - Jon Pentland (https://github.com/instification)
+- 1letter
 
 
 ## Contribute
