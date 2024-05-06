@@ -17,17 +17,11 @@ class TestSetup(unittest.TestCase):
     def setUp(self):
         """Custom shared utility setup for tests."""
         self.portal = self.layer["portal"]
-        if get_installer:
-            self.installer = get_installer(self.portal, self.layer["request"])
-        else:
-            self.installer = api.portal.get_tool("portal_quickinstaller")
+        self.installer = get_installer(self.portal, self.layer["request"])
 
     def test_product_installed(self):
         """Test if pas.plugins.tfa is installed."""
-        if hasattr(self.installer, "is_product_installed"):
-            installed = self.installer.is_product_installed("pas.plugins.tfa")
-        else:
-            installed = self.installer.isProductInstalled("pas.plugins.tfa")
+        installed = self.installer.is_product_installed("pas.plugins.tfa")
         self.assertTrue(installed)
 
     def test_plugin_added(self):
@@ -47,6 +41,21 @@ class TestSetup(unittest.TestCase):
 
         self.assertIn(IPasPluginsOtpLayer, utils.registered_layers())
 
+    def test_noninstallable(self):
+
+        from Products.CMFPlone.interfaces import INonInstallable
+        from zope.component import getAllUtilitiesRegisteredFor
+
+        not_installable = []
+        utils = getAllUtilitiesRegisteredFor(INonInstallable)
+        for util in utils:
+            gnip = getattr(util, "getNonInstallableProducts", None)
+            if gnip is None:
+                continue
+            not_installable.extend(gnip())
+
+        self.assertTrue("pas.plugins.tfa.upgrades" in not_installable)
+
 
 class TestUninstall(unittest.TestCase):
     layer = PAS_PLUGINS_OTP_INTEGRATION_TESTING
@@ -59,18 +68,12 @@ class TestUninstall(unittest.TestCase):
             self.installer = api.portal.get_tool("portal_quickinstaller")
         roles_before = api.user.get_roles(TEST_USER_ID)
         setRoles(self.portal, TEST_USER_ID, ["Manager"])
-        if hasattr(self.installer, "uninstall_product"):
-            self.installer.uninstall_product("pas.plugins.tfa")
-        else:
-            self.installer.uninstallProducts(["pas.plugins.tfa"])
+        self.installer.uninstall_product("pas.plugins.tfa")
         setRoles(self.portal, TEST_USER_ID, roles_before)
 
     def test_product_uninstalled(self):
         """Test if pas.plugins.tfa is cleanly uninstalled."""
-        if hasattr(self.installer, "is_product_installed"):
-            installed = self.installer.is_product_installed("pas.plugins.tfa")
-        else:
-            installed = self.installer.isProductInstalled("pas.plugins.tfa")
+        installed = self.installer.is_product_installed("pas.plugins.tfa")
         self.assertFalse(installed)
 
     def test_browserlayer_removed(self):
