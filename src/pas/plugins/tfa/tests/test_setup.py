@@ -43,7 +43,7 @@ class TestSetup(unittest.TestCase):
 
     def test_noninstallable(self):
 
-        from Products.CMFPlone.interfaces import INonInstallable
+        from plone.base.interfaces import INonInstallable
         from zope.component import getAllUtilitiesRegisteredFor
 
         not_installable = []
