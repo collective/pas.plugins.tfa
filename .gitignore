@@ -46,6 +46,12 @@ local.cfg
 /venv/
 .installed.txt
 
+report.html
+log.html
+output.xml
+robot_log.html
+robot_output.xml
+robot_report.html
 forest.dot
 forest.json
 

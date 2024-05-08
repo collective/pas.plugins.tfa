@@ -5,16 +5,37 @@
 template = "default"
 commit-id = "1c2155e4"
 
+[gitignore]
+extra_lines = """
+report.html
+log.html
+output.xml
+robot_log.html
+robot_output.xml
+robot_report.html
+forest.dot
+forest.json
+"""
+
+[github]
+extra_lines = """
+  plonetests:
+    uses: collective/workflow-plonematrix/.github/workflows/plonetest-matrix.yml@main
+"""
+
 [tox]
 use_mxdev = true
+config_lines = """
+[gh-actions]
+python =
+    3.8: py38
+    3.9: py39
+    3.10: py310
+    3.11: py311
+    3.12: py312
+"""
 
 [pre_commit]
 i18ndude_extra_lines = """
         pass_filenames: false
-"""
-
-[gitignore]
-extra_lines = """
-forest.dot
-forest.json
 """
