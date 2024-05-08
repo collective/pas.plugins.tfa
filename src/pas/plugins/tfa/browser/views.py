@@ -1,17 +1,18 @@
-from .. import _
-from .. import logger
-from .. import PMF
-from ..helpers import drop_login_failed_msg
-from ..helpers import get_barcode_image
-from ..helpers import get_domain_name
-from ..helpers import get_or_create_secret
-from ..helpers import validate_token
-from ..helpers import validate_user_data
+from pas.plugins.tfa import _
+from pas.plugins.tfa import logger
+from pas.plugins.tfa import PMF
+from pas.plugins.tfa.helpers import drop_login_failed_msg
+from pas.plugins.tfa.helpers import get_barcode_image
+from pas.plugins.tfa.helpers import get_domain_name
+from pas.plugins.tfa.helpers import get_or_create_secret
+from pas.plugins.tfa.helpers import validate_token
+from pas.plugins.tfa.helpers import validate_user_data
 from plone import api
-from plone.autoform import directives
 from plone.autoform.form import AutoExtensibleForm
 from plone.supermodel import model
+from plone.z3cform.layout import FormWrapper
 from plone.z3cform.layout import wrap_form
+from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.statusmessages.interfaces import IStatusMessage
 from z3c.form import button
 from z3c.form import field
@@ -35,15 +36,6 @@ class ITokenFormAdd(model.Schema):
     """
     Interface for the 2FA Token validation form.
     """
-
-    # The qr_code field isn't used as a input field, instead it is used to show the QR code
-    # TODO: change it (?)
-    directives.mode(qr_code="display")
-    qr_code = TextLine(
-        title=_("QR Code"),
-        description=_("Scan this QR code with your device."),
-        required=False,
-    )
 
     token = TextLine(
         title=_("Enter code"),
@@ -162,28 +154,38 @@ class TokenForm(AutoExtensibleForm, form.Form):
 
 
 class TokenFormAdd(TokenForm):
+
     fields = field.Fields(ITokenFormAdd)
 
     def updateFields(self, *args, **kwargs):
         super().updateFields(*args, **kwargs)
-        # Adding a proper description (with bar code image)
-        barcode_field = self.fields.get("qr_code")
-        # TODO: verify signature
+
+
+# View for the ``TokenForm``.
+TokenFormView = wrap_form(TokenForm)
+
+
+# View for the token Addform with Barcode
+class TokenFormAddView(FormWrapper):
+
+    form = TokenFormAdd
+
+    index = ViewPageTemplateFile("templates/tokenform-add.pt")
+
+    @property
+    def barcode(self):
+
         login = self.request.get("login", "")
+
         if login:
             user = api.user.get(username=login)
         else:
             user = api.user.get_current()
+
         secret = get_or_create_secret(user, prefix="temp-")
-        if barcode_field:
-            # TODO: username, login or userid (?)
-            barcode_field.field.description = f"""<div><img src="data:image/png;base64,{get_barcode_image(
+
+        return f"""<div><img src="data:image/png;base64,{get_barcode_image(
             user.getId(),
             get_domain_name(self.request),
             secret,
         )}" alt="QR Code" /></div>"""
-
-
-# View for the ``TokenForm``.
-TokenFormAddView = wrap_form(TokenFormAdd)
-TokenFormView = wrap_form(TokenForm)
