@@ -32,9 +32,13 @@ class TestIntegrationHelpers(unittest.TestCase):
         signed_url = helpers.sign_url(login, secret_key, lifetime=10, url="")
         self.assertTrue(signed_url.startswith("?login=user1&"))
 
+        signed_url = helpers.sign_url(login, secret_key, lifetime=None, url="")
+        self.assertTrue(signed_url.startswith("?login=user1&"))
+
     def test_sign_data(self):
-        import hashlib
         from pas.plugins.tfa.helpers import sign_data
+
+        import hashlib
 
         signature1 = sign_data(
             secret_key="tmp-123",
