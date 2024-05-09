@@ -39,7 +39,7 @@ class TestFunctionalForms(FunctionalBase):
         secret = member.getProperty("two_factor_authentication_secret")
 
         # the secret is empty
-        self.assertEqual(len(secret), 0, "The secret should be empty")
+        self.assertFalse(secret, "The secret should be empty")
 
         browser = self._anon_browser()
         browser.open(f"{self.portal.absolute_url()}/login")
