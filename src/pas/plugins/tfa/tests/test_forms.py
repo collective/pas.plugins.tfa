@@ -49,3 +49,32 @@ class TestFunctionalForms(FunctionalBase):
 
         # the form url contain tfa-add
         self.assertIn("@@tfa-add", browser.url)
+
+    def test_tfaddform_login_process(self):
+        import pyotp
+
+        member = self._getMember(TEST_USER_NAME)
+
+        secret = member.getProperty("two_factor_authentication_secret")
+
+        # the secret is empty
+        self.assertFalse(secret, "The secret should be empty")
+
+        browser = self._anon_browser()
+        browser.open(f"{self.portal.absolute_url()}/login")
+        browser.getControl(name="__ac_name").value = TEST_USER_NAME
+        browser.getControl(name="__ac_password").value = TEST_USER_PASSWORD
+        browser.getControl(name="buttons.login").click()
+
+        member = self._getMember(TEST_USER_NAME)
+        secret = member.getProperty("two_factor_authentication_secret")
+
+        # the secret is not empty
+        self.assertTrue(secret, "The secret should not be empty")
+
+        # use the secret, we didn't scan the qr-code in tests
+        totp = pyotp.TOTP(secret)
+        browser.getControl(name="form.widgets.token").value = totp.now()
+        browser.getControl(name="form.buttons.verify").click()
+
+        self.assertIn("Welcome! You are now logged in", browser.contents)
