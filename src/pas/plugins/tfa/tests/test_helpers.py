@@ -16,7 +16,7 @@ import unittest
 QR_CODE_REF = "iVBORw0KGgoAAAANSUhEUgAAAZoAAAGaAQAAAAAefbjOAAADGElEQVR4nO2bS46bQBCGvwpIXjY3mKPAzUY5Um4AR/EBIsHSEujPorqBmckmcYI9Q7FAfn1ytyjV469qE398Dd/+nIGAAgoooIACCuhrQpavGusms/zdVJdfTeUH3UOWF9DxUCtJGkE9ldw2rIFiFpUkSW+h45YX0PHQlB2AdSzmtqFxMbOXm7sMM6vfQ8ctL6CHQfreZLOwjkpAJev+xz8F9EmgVjMMDTA0i30E/t0/BfTUUJLUA2Z2ESSJdqxEO4J6QNL8uOUFdDQ0mJmnku0ItNetzKixjsVLjUctL6DjIH/ym5QtyKmkYPYbpLda95PvKaB7ILyqbMdqV316hGg1u8uQNCONlbxK7Z98TwHdD+l7s5jZiwTpZtZNNTBdBGnOucXwEnnEGaB6/2aqZ7eDXGtgGgw0dIsBdTGJJ99TQPdAHjVy6JCUo8a43QCovP7wK6LGV4ZyHkGagWIMuAkAJcGotLvCIr4ytGaWoD6tmQJV1iMANlEiMsuvD+Wo0VOpPHMvN4tMpRn1JWCERZwHSjez1yJgq2cx2qsZTBfZ69XMbBO1P8meAvobaM0s5yxW9yk7hdwhL9r15ijCR5wBGho8ScgqBIvlTtdUF2V7BOses7yAjobs9VoDkxmkm2WlclxNgJiPOA20Vp8qisO4lqBp3tWmu0gSUeMEUDsuRnstfc6OXG762GV7vXgd6uXIJ9lTQHdllsUp7KXJlGcvs0wV1eeJILMGpG0qgsX85v2tdCtj2A9ZXkCPqj5X97AlE5tcSeQRp4BK7gg+AVHMIs9HaDdLl+ZQsU8A7Xqfu6pjMwaXIkoKERZxFmg70+WixGA1DFb7SFU+xjPFnOUZoNL7fJM9bEMSOx8R8xHngHbdcC8y+zSzNcLLxAxE1DgtNNUfPvIOOdH7PAP0/vEbVDNMAOlnbe2PamZoRhlTc/zyAjocKhaRBEwgdwXpZrQ/LjJYjHZcag0v66GNJ99TQPdA2SIGDwgV1vb+SvhZniQMKhmJ8u2T7ymge6DfnOmq1nclvXx7e/o9BRRQQAEFFFBAx0C/ADwlZbk/JKCmAAAAAElFTkSuQmCC"
 
 
-class TestSetup(unittest.TestCase):
+class TestIntegrationHelpers(unittest.TestCase):
     """Test that pas.plugins.tfa is properly installed."""
 
     layer = PAS_PLUGINS_OTP_INTEGRATION_TESTING
@@ -32,9 +32,29 @@ class TestSetup(unittest.TestCase):
         signed_url = helpers.sign_url(login, secret_key, lifetime=10, url="")
         self.assertTrue(signed_url.startswith("?login=user1&"))
 
+    def test_sign_data(self):
+        import hashlib
+        from pas.plugins.tfa.helpers import sign_data
 
-# zope-testrunner -pvc --test-path=./src -t HelpersFunctionalTest
-class HelpersFunctionalTest(unittest.TestCase):
+        signature1 = sign_data(
+            secret_key="tmp-123",
+            name="john doe",
+        )
+
+        signature2 = hashlib.sha256(b"name=john doe&secret_key=tmp-123").hexdigest()
+
+        signature3 = sign_data(
+            name="john doe",
+        )
+
+        signature4 = hashlib.sha256(b"name=john doe").hexdigest()
+
+        self.assertEqual(signature1, signature2)
+        self.assertEqual(signature3, signature4)
+
+
+# zope-testrunner -pvc --test-path=./src -t TestFunctionalHelpers
+class TestFunctionalHelpers(unittest.TestCase):
     layer = PAS_PLUGINS_OTP_FUNCTIONAL_TESTING
 
     def _manager_browser(self):
