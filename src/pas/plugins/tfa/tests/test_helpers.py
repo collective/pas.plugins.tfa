@@ -1,14 +1,7 @@
-"""Setup tests for this package."""
-
-from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_FUNCTIONAL_TESTING  # noqa: E501
 from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_INTEGRATION_TESTING  # noqa: E501
 from plone.app.testing import setRoles
-from plone.app.testing import SITE_OWNER_NAME
-from plone.app.testing import SITE_OWNER_PASSWORD
 from plone.app.testing import TEST_USER_ID
-from plone.testing.zope import Browser
 
-import transaction
 import unittest
 
 
@@ -24,6 +17,8 @@ class TestIntegrationHelpers(unittest.TestCase):
         """Custom shared utility setup for tests."""
         self.portal = self.layer["portal"]
         self.request = self.layer["request"]
+        setRoles(self.portal, TEST_USER_ID, ["Member"])
+        self.portal.acl_users.userFolderAddUser("user1", "secret", ["Member"], [])
 
     def test_sign_url(self):
 
@@ -65,38 +60,6 @@ class TestIntegrationHelpers(unittest.TestCase):
         url = sign_user_data(request=None, user=None)
         self.assertIn("@@tfa", url)
         self.assertIn(TEST_USER_ID, url)
-
-
-# zope-testrunner -pvc --test-path=./src -t TestFunctionalHelpers
-class TestFunctionalHelpers(unittest.TestCase):
-    layer = PAS_PLUGINS_OTP_FUNCTIONAL_TESTING
-
-    def _manager_browser(self):
-        transaction.commit()
-        # Set up browser
-        browser = Browser(self.layer["app"])
-        browser.handleErrors = False
-        browser.addHeader(
-            "Authorization",
-            "Basic {}:{}".format(
-                SITE_OWNER_NAME,
-                SITE_OWNER_PASSWORD,
-            ),
-        )
-        return browser
-
-    def _anon_browser(self):
-        transaction.commit()
-        # Set up browser
-        browser = Browser(self.layer["app"])
-        browser.handleErrors = False
-        return browser
-
-    def setUp(self):
-        self.portal = self.layer["portal"]
-        self.request = self.layer["request"]
-        setRoles(self.portal, TEST_USER_ID, ["Member"])
-        self.portal.acl_users.userFolderAddUser("user1", "secret", ["Member"], [])
 
     def test_extract_ip_address_from_request(self):
         from pas.plugins.tfa.helpers import extract_ip_address_from_request
