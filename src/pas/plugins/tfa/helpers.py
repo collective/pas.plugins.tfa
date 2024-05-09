@@ -323,20 +323,7 @@ def get_barcode_image(username, domain, secret):
     :param string secret:
     :return string:
     """
-    """
-    params = urlencode(
-        {
-            "chs": "200x200",
-            "chld": "M|0",
-            "cht": "qr",
-            "chl": f"otpauth://totp/{username}@{domain}?secret={secret}",
-        }
-    )
-    # dont use google for generation
-    # url = f"https://chart.googleapis.com/chart?{params}"
-    """
 
-    # use qrcode from pypi as inline base64 image
     url = f"otpauth://totp/{username}@{domain}?secret={secret}"
     image = qrcode.make(url)
     buffer = BytesIO()
