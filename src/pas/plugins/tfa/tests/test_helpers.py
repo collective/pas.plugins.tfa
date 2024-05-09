@@ -1,6 +1,5 @@
 """Setup tests for this package."""
 
-from pas.plugins.tfa import helpers
 from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_FUNCTIONAL_TESTING  # noqa: E501
 from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_INTEGRATION_TESTING  # noqa: E501
 from plone.app.testing import setRoles
@@ -27,12 +26,15 @@ class TestIntegrationHelpers(unittest.TestCase):
         self.request = self.layer["request"]
 
     def test_sign_url(self):
+
+        from pas.plugins.tfa.helpers import sign_url
+
         login = "user1"
         secret_key = "secret"
-        signed_url = helpers.sign_url(login, secret_key, lifetime=10, url="")
+        signed_url = sign_url(login, secret_key, lifetime=10, url="")
         self.assertTrue(signed_url.startswith("?login=user1&"))
 
-        signed_url = helpers.sign_url(login, secret_key, lifetime=None, url="")
+        signed_url = sign_url(login, secret_key, lifetime=None, url="")
         self.assertTrue(signed_url.startswith("?login=user1&"))
 
     def test_sign_data(self):
@@ -55,6 +57,14 @@ class TestIntegrationHelpers(unittest.TestCase):
 
         self.assertEqual(signature1, signature2)
         self.assertEqual(signature3, signature4)
+
+    def test_sign_user_data(self):
+
+        from pas.plugins.tfa.helpers import sign_user_data
+
+        url = sign_user_data(request=None, user=None)
+        self.assertIn("@@tfa", url)
+        self.assertIn(TEST_USER_ID, url)
 
 
 # zope-testrunner -pvc --test-path=./src -t TestFunctionalHelpers
