@@ -14,7 +14,7 @@
     >
       <property name="modal"
                 type="text"
-      >{"actionOptions": {"redirectOnResponse": false, "displayInModal": true, "onSuccess": "tfalogin"}}</property>
+      >{"prependContent":"#global_statusmessage","actionOptions": {"redirectOnResponse": false, "displayInModal": true, "onSuccess": "tfalogin"}}</property>
     </object>
 
   </object>
