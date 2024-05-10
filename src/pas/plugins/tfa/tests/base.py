@@ -31,3 +31,13 @@ class FunctionalBase(unittest.TestCase):
             ),
         )
         return browser
+
+    def _getMember(self, username):
+
+        # that's the plone user
+        user = self.portal.acl_users.getUser(username)
+
+        # that's the memberdata object
+        member = self.portal.portal_membership.getMemberById(user.getId())
+
+        return member

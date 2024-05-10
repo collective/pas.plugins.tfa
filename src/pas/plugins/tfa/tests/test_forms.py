@@ -1,4 +1,3 @@
-from pas.plugins.tfa.testing import PAS_PLUGINS_OTP_FUNCTIONAL_TESTING
 from pas.plugins.tfa.tests.base import FunctionalBase
 from plone.app.testing import setRoles
 from plone.app.testing import TEST_USER_ID
@@ -7,18 +6,6 @@ from plone.app.testing import TEST_USER_PASSWORD
 
 
 class TestFunctionalForms(FunctionalBase):
-
-    layer = PAS_PLUGINS_OTP_FUNCTIONAL_TESTING
-
-    def _getMember(self, username):
-
-        # that's the plone user
-        user = self.portal.acl_users.getUser(username)
-
-        # that's the memberdata object
-        member = self.portal.portal_membership.getMemberById(user.getId())
-
-        return member
 
     def setUp(self):
         self.portal = self.layer["portal"]
