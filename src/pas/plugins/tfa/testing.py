@@ -6,8 +6,6 @@ from plone.app.testing import PLONE_FIXTURE
 from plone.app.testing import PloneSandboxLayer
 from plone.testing.zope import WSGI_SERVER_FIXTURE
 
-import pas.plugins.tfa
-
 
 class PasPluginsOtpLayer(PloneSandboxLayer):
     defaultBases = (PLONE_FIXTURE,)
@@ -17,9 +15,14 @@ class PasPluginsOtpLayer(PloneSandboxLayer):
         # The z3c.autoinclude feature is disabled in the Plone fixture base
         # layer.
 
+        import pas.plugins.tfa
+        import plone.restapi
+
         self.loadZCML(package=pas.plugins.tfa)
+        self.loadZCML(package=plone.restapi)
 
     def setUpPloneSite(self, portal):
+        applyProfile(portal, "plone.restapi:default")
         applyProfile(portal, "pas.plugins.tfa:default")
 
 
@@ -33,7 +36,7 @@ PAS_PLUGINS_OTP_INTEGRATION_TESTING = IntegrationTesting(
 
 
 PAS_PLUGINS_OTP_FUNCTIONAL_TESTING = FunctionalTesting(
-    bases=(PAS_PLUGINS_OTP_FIXTURE,),
+    bases=(PAS_PLUGINS_OTP_FIXTURE, WSGI_SERVER_FIXTURE),
     name="PasPluginsOtpLayer:FunctionalTesting",
 )
 
