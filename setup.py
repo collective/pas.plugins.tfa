@@ -77,6 +77,7 @@ setup(
             "plone.browserlayer",
             "plone.base",
             "plone.app.robotframework[debug]",
+            "requests",
         ],
     },
     entry_points="""
