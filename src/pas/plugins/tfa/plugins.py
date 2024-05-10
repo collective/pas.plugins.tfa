@@ -220,7 +220,7 @@ class TFAPlugin(BasePlugin):
                             "action": "add",
                             "login": user.getId(),
                             # TODO: urlencode user and domain
-                            "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={secret}",
+                            "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name(request)}?secret={secret}",
                             "signature": sign_user_data(
                                 request=request, user=user, url=""
                             ),
