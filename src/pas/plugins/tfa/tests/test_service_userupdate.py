@@ -144,5 +144,6 @@ class ServiceEndpointUserUpdateFunctionalTest(FunctionalBase):
                 "two_factor_authentication_otp": otp,
             },
         )
-        self.assertTrue(response.ok)
-        self.assertEqual(204, response.status_code)
+
+        self.assertFalse(response.ok)
+        self.assertEqual(400, response.status_code)
