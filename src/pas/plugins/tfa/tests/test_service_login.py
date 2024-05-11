@@ -27,7 +27,11 @@ class ServiceEndpointLoginFunctionalTest(FunctionalBase):
         self.assertIn("token", response.text)
 
     def test_login_with_2FA(self):
+        from urllib.parse import parse_qs
+        from urllib.parse import urlparse
+
         import json
+        import pyotp
         import requests
 
         member = self._getMember(TEST_USER_NAME)
@@ -54,3 +58,20 @@ class ServiceEndpointLoginFunctionalTest(FunctionalBase):
         self.assertIn(TEST_USER_ID, data.get("login"))
         self.assertIn("otpauth://", data.get("qr_code"))
         self.assertIn("totp", data.get("type"))
+
+        # extract the secret
+        # otpauth://totp/test_user_1_@localhost?secret=F3ZHV2AGZCKQLBNH7FCGU2FAVYV2LGIM
+        parse_result = urlparse(data.get("qr_code"))
+        result = parse_qs(parse_result.query)
+        secret = result.get("secret")[0]
+        # get the current token
+        otp = pyotp.TOTP(secret).now()
+
+        # login with 2FA
+        response = requests.post(
+            f"{self.portal.absolute_url()}/@login",
+            headers={"Accept": "application/json"},
+            json={"login": TEST_USER_NAME, "otp": otp},
+        )
+        transaction.commit()
+        self.assertIn("token", response.text)
