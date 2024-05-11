@@ -3,6 +3,8 @@ from plone.restapi import _
 from plone.restapi.deserializer import json_body
 from plone.restapi.services.users.update import UsersPatch as UsersPatchBase
 
+import json
+
 
 class UsersPatch(UsersPatchBase):
     def reply(self):
@@ -20,4 +22,10 @@ class UsersPatch(UsersPatchBase):
                     "Bad Request",
                     _("OTP Value is invalid"),
                 )
+        # Fix the JSON in Body, UsersPatch from plone.restapi consume the BODY
+        #
+        # user.setMemberProperties(mapping={key: value}, force_empty=True) fails
+        # if a key not in properties
+        del data["two_factor_authentication_otp"]
+        self.request.set("BODY", json.dumps(data))
         return super().reply()
