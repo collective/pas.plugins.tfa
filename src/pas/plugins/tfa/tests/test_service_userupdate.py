@@ -15,7 +15,7 @@ class ServiceEndpointUserUpdateFunctionalTest(FunctionalBase):
         acl_users.userFolderAddUser(self.userid, self.pwd, ["Member"], [])
         transaction.commit()
 
-    def test_login_without_2FA(self):
+    def test_userpatch(self):
         import json
         import pyotp
         import requests
