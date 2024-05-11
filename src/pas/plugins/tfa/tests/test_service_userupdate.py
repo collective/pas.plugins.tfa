@@ -147,3 +147,55 @@ class ServiceEndpointUserUpdateFunctionalTest(FunctionalBase):
 
         self.assertFalse(response.ok)
         self.assertEqual(400, response.status_code)
+
+    def test_userpatch_properties_untouched(self):
+        import json
+        import requests
+
+        memberProperties = self._getMemberProperties(self.userid)
+        del memberProperties["last_login_time"]  # not needed for comparison
+        del memberProperties["login_time"]  # not needed for comparison
+
+        # login
+        response = requests.post(
+            f"{self.portal.absolute_url()}/@login",
+            headers={"Accept": "application/json"},
+            json={"login": self.userid, "password": self.pwd},
+        )
+        transaction.commit()
+
+        data = json.loads(response.text)
+
+        # get the jwt token
+        token = data.get("token")
+
+        # start a session as authenticated user
+        session = requests.Session()
+        session.headers.update(
+            {
+                "Accept": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+        )
+
+        # send a patch for member data with property 2FA disabled
+        response = session.patch(
+            f"{self.portal.absolute_url()}/@users/{self.userid}",
+            json={
+                "two_factor_authentication_enabled": False,
+                "two_factor_authentication_otp": "12345678",
+            },
+        )
+        self.assertTrue(response.ok)
+        self.assertEqual(204, response.status_code)
+        transaction.commit()
+
+        patchedMemberProperties = self._getMemberProperties(self.userid)
+        del patchedMemberProperties["last_login_time"]  # not needed for comparison
+        del patchedMemberProperties["login_time"]  # not needed for comparison
+
+        self.assertEqual(
+            memberProperties,
+            patchedMemberProperties,
+            "Member properties should be equal",
+        )

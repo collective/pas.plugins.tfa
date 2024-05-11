@@ -50,3 +50,13 @@ class FunctionalBase(unittest.TestCase):
         result = parse_qs(parse_result.query)
         secret = result.get("secret")[0]
         return secret
+
+    def _getMemberProperties(self, username):
+        portal = self.layer["portal"]
+        portal_memberdata = portal.portal_memberdata
+        properties = portal_memberdata.propertyIds()
+        member = self._getMember(username)
+        member_properties = {}
+        for prop in properties:
+            member_properties.update({prop: member.getProperty(prop)})
+        return member_properties
