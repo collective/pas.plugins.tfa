@@ -2,7 +2,7 @@
 include =
     src/pas/*
 omit =
-    */test/*
+    */tests/*
     */test*
     */upgrades/*
     */locales/*
