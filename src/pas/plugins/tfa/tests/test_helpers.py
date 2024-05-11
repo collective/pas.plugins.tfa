@@ -103,3 +103,16 @@ class TestIntegrationHelpers(unittest.TestCase):
             secret,
         )
         self.assertEqual(str(base64_image), QR_CODE_REF)
+
+    def test_get_or_create_secret(self):
+        from pas.plugins.tfa.helpers import get_or_create_secret
+
+        secret = get_or_create_secret()
+
+        self.assertIsNotNone(secret)
+
+    def test_get_secret_key(self):
+        from pas.plugins.tfa.helpers import get_secret_key
+
+        key = get_secret_key()
+        self.assertIsNotNone(key)
