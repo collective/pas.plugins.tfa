@@ -67,7 +67,13 @@ class TestIntegrationHelpers(unittest.TestCase):
         # inject a IP
         remote_ip = "10.10.10.11"
         self.request.environ.update({"REMOTE_ADDR": remote_ip})
+
+        # extract with request as parameter
         ip = extract_ip_address_from_request(self.request)
+        self.assertEqual(ip, remote_ip)
+
+        # extract without request as parameter
+        ip = extract_ip_address_from_request()
         self.assertEqual(ip, remote_ip)
 
         # inject a proxy IP
