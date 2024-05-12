@@ -129,3 +129,16 @@ class TestIntegrationHelpers(unittest.TestCase):
 
         key = get_secret_key()
         self.assertIsNotNone(key)
+
+    def test_get_secret_key_temp(self):
+        from pas.plugins.tfa.helpers import get_secret_key
+
+        # that's the memberdata object
+        member = self.portal.portal_membership.getMemberById("user1")
+        # fake temp secret
+        fake_secret = "1953"
+        member.setMemberProperties(
+            mapping={"two_factor_authentication_secret": f"temp-{fake_secret}"}
+        )
+        secret_key = get_secret_key(user=member)
+        self.assertTrue(secret_key.startswith(fake_secret))
