@@ -117,6 +117,13 @@ class TestIntegrationHelpers(unittest.TestCase):
 
         self.assertIsNotNone(secret)
 
+    def test_get_or_create_secret_override(self):
+        from pas.plugins.tfa.helpers import get_or_create_secret
+
+        secret = get_or_create_secret(overwrite=True)
+
+        self.assertIsNotNone(secret)
+
     def test_get_secret_key(self):
         from pas.plugins.tfa.helpers import get_secret_key
 
