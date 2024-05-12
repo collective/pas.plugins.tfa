@@ -142,3 +142,10 @@ class TestIntegrationHelpers(unittest.TestCase):
         )
         secret_key = get_secret_key(user=member)
         self.assertTrue(secret_key.startswith(fake_secret))
+
+    def test_validate_token(self):
+        from pas.plugins.tfa.helpers import validate_token
+
+        # no user as parameter and an invalid token
+        result = validate_token(123)
+        self.assertFalse(result)
