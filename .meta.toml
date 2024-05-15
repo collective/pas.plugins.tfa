@@ -18,6 +18,13 @@ forest.json
 """
 
 [github]
+jobs = [
+    "qa",
+    "coverage",
+    "dependencies",
+    "release_ready",
+    "circular",
+    ]
 extra_lines = """
   plonetests:
     uses: collective/workflow-plonematrix/.github/workflows/plonetest-matrix.yml@main
