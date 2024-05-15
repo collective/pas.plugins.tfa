@@ -116,3 +116,31 @@ class TestFunctionalForms(FunctionalBase):
         browser.getControl(name="form.buttons.verify").click()
 
         self.assertIn("Invalid token or token expired", browser.contents)
+
+    def test_tfaform(self):
+        from pas.plugins.tfa.helpers import get_or_create_secret
+
+        import pyotp
+
+        member = self._getMember(TEST_USER_NAME)
+        # enable 2fa
+        member.setMemberProperties(mapping={"two_factor_authentication_enabled": True})
+
+        # set secret
+        secret = get_or_create_secret(member)
+        member.setMemberProperties(mapping={"two_factor_authentication_secret": secret})
+
+        browser = self._anon_browser()
+        browser.open(f"{self.portal.absolute_url()}/login")
+        browser.getControl(name="__ac_name").value = TEST_USER_NAME
+        browser.getControl(name="__ac_password").value = TEST_USER_PASSWORD
+        browser.getControl(name="buttons.login").click()
+
+        self.assertIn("TOKEN_REQUIRED", browser.contents)
+
+        totp = pyotp.TOTP(secret)
+        token = totp.now()
+        browser.getControl(name="form.widgets.token").value = token
+        browser.getControl(name="form.buttons.verify").click()
+
+        self.assertIn("Welcome! You are now logged in.", browser.contents)
