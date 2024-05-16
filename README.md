@@ -1,3 +1,8 @@
+[![Plone](https://img.shields.io/badge/Plone-6.0%20%7C%206.1-blue)](https://github.com/collective/pas.plugins.tfa/actions/workflows/meta.yml)
+[![Meta](https://github.com/collective/pas.plugins.tfa/actions/workflows/meta.yml/badge.svg)](https://github.com/collective/pas.plugins.tfa/actions/workflows/meta.yml)
+![Code Style](https://img.shields.io/badge/Code%20Style-Black-000000)
+[![GitHub contributors](https://img.shields.io/github/contributors/collective/pas.plugins.tfa)](https://github.com/collective/pas.plugins.tfa)
+
 - [pas.plugins.tfa](#paspluginstfa)
   - [Features](#features)
   - [Installation](#installation)
