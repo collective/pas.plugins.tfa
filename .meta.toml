@@ -20,7 +20,6 @@ forest.json
 [github]
 jobs = [
     "qa",
-    "coverage",
     "dependencies",
     "release_ready",
     "circular",
@@ -28,6 +27,10 @@ jobs = [
 extra_lines = """
   plonetests:
     uses: collective/workflow-plonematrix/.github/workflows/plonetest-matrix.yml@main
+  codecov:
+    uses: collective/workflow-plonematrix/.github/workflows/codecov.yml@main
+    secrets:
+       codecov-token: ${{ secrets.CODECOV_TOKEN }}
 """
 
 [tox]

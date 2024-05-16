@@ -26,8 +26,6 @@ on:
 jobs:
   qa:
     uses: plone/meta/.github/workflows/qa.yml@main
-  coverage:
-    uses: plone/meta/.github/workflows/coverage.yml@main
   dependencies:
     uses: plone/meta/.github/workflows/dependencies.yml@main
   release_ready:
@@ -64,6 +62,10 @@ jobs:
 
   plonetests:
     uses: collective/workflow-plonematrix/.github/workflows/plonetest-matrix.yml@main
+  codecov:
+    uses: collective/workflow-plonematrix/.github/workflows/codecov.yml@main
+    secrets:
+       codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
 ##
 # Specify additional jobs in .meta.toml:
