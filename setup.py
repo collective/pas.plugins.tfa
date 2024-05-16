@@ -56,7 +56,6 @@ setup(
         "plone.api",
         "plone.restapi",
         "pyotp",
-        "iw.rejectanonymous",
         "Products.GenericSetup",
         "Products.PluggableAuthService",
         "Products.statusmessages",
