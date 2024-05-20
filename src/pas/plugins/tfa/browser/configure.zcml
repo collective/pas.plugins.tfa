@@ -2,7 +2,8 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:plone="http://namespaces.plone.org/plone"
-    i18n_domain="pas.plugins.tfa">
+    i18n_domain="pas.plugins.tfa"
+    >
 
   <!-- Set overrides folder for Just-a-Bunch-Of-Templates product -->
   <!-- <include package="z3c.jbot" file="meta.zcml" />
@@ -11,26 +12,26 @@
       layer="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
       /> -->
 
-    <!-- Publish static files -->
-    <plone:static
+  <!-- Publish static files -->
+  <plone:static
+      directory="static"
       name="pas.plugins.tfa"
       type="plone"
-      directory="static"
       />
 
-    <!-- -*- token validation form -*- -->
-    <browser:page
-        name="tfa"
-        for="*"
-        permission="zope2.View"
-        class=".views.TokenFormView"
-        />
+  <!-- -*- token validation form -*- -->
+  <browser:page
+      name="tfa"
+      for="*"
+      class=".views.TokenFormView"
+      permission="zope2.View"
+      />
 
-    <browser:page
-        name="tfa-add"
-        for="*"
-        permission="zope2.View"
-        class=".views.TokenFormAddView"
-        />
+  <browser:page
+      name="tfa-add"
+      for="*"
+      class=".views.TokenFormAddView"
+      permission="zope2.View"
+      />
 
 </configure>

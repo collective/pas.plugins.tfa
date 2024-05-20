@@ -1,4 +1,16 @@
 graft src/pas
-graft docs
-include *.rst
+
+include *.md
+include *.yaml
+include *.yml
+include .coveragerc
+
 global-exclude *.pyc
+
+exclude tox.ini
+exclude *.txt
+exclude .rst
+exclude Makefile
+exclude .coveragerc
+
+recursive-exclude news *

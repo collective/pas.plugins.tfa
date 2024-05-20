@@ -1,17 +1,15 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
-        xmlns:plone="http://namespaces.plone.org/plone"
-
-    xmlns:zcml="http://namespaces.zope.org/zcml"
+    xmlns:plone="http://namespaces.plone.org/plone"
     >
 
   <plone:service
       method="POST"
       factory=".login.Login"
-      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      for="plone.base.interfaces.IPloneSiteRoot"
       permission="zope.Public"
-      name="@login"
       layer="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
+      name="@login"
       />
 
   <plone:service
@@ -19,8 +17,8 @@
       factory=".update.UsersPatch"
       for="Products.CMFCore.interfaces.ISiteRoot"
       permission="zope2.View"
-      name="@users"
       layer="pas.plugins.tfa.interfaces.IPasPluginsOtpLayer"
+      name="@users"
       />
 
 </configure>

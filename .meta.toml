@@ -1,0 +1,54 @@
+# Generated from:
+# https://github.com/plone/meta/tree/main/config/default
+# See the inline comments on how to expand/tweak this configuration file
+[meta]
+template = "default"
+commit-id = "721299ce"
+
+[gitignore]
+extra_lines = """
+report.html
+log.html
+output.xml
+robot_log.html
+robot_output.xml
+robot_report.html
+forest.dot
+forest.json
+"""
+
+[github]
+jobs = [
+    "qa",
+    "dependencies",
+    "release_ready",
+    "circular",
+    ]
+extra_lines = """
+  plonetests:
+    uses: collective/workflow-plonematrix/.github/workflows/plonetest-matrix.yml@main
+  codecov:
+    uses: collective/workflow-plonematrix/.github/workflows/codecov.yml@main
+    secrets:
+       codecov-token: ${{ secrets.CODECOV_TOKEN }}
+"""
+
+[tox]
+use_mxdev = true
+config_lines = """
+[gh-actions]
+python =
+    3.8: py38
+    3.9: py39
+    3.10: py310
+    3.11: py311
+    3.12: py312
+"""
+
+[pre_commit]
+i18ndude_extra_lines = """
+        pass_filenames: false
+"""
+
+[pyproject]
+dependencies_ignores = "['iw.rejectanonymous']"

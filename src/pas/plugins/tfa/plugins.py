@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 The idea of this PAS plugin is quite simple. It should check the user profile
 for the user being logged in and if user has enabled two-step verification for
@@ -11,9 +10,21 @@ If user has not enabled the two-step verification for his account
 (``two_factor_authentication_enabled`` is set to False), then do nothing so
 that Plone continues logging in the user normal way.
 """
+
+from . import logger
+
+# from .helpers import extract_ip_address_from_request
+from .helpers import get_domain_name
+from .helpers import get_or_create_secret
+from .helpers import sign_user_data
+from .helpers import validate_token
+from .interfaces import OTP_CHALLENGE_KEY
 from AccessControl.class_init import InitializeClass
 from AccessControl.SecurityInfo import ClassSecurityInfo
 from plone import api
+from plone.restapi.deserializer import json_body
+from plone.restapi.exceptions import DeserializationError
+from plone.restapi.pas.plugin import JWTAuthenticationPlugin
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
 from Products.PluggableAuthService.interfaces.plugins import IExtractionPlugin
@@ -23,18 +34,7 @@ from Products.PluggableAuthService.PluggableAuthService import (
 from Products.PluggableAuthService.PluggableAuthService import reraise
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.utils import classImplements
-from plone.restapi.pas.plugin import JWTAuthenticationPlugin
-from . import logger
-
-# from .helpers import extract_ip_address_from_request
-from .helpers import get_or_create_secret
-from .helpers import sign_user_data
-from .helpers import get_domain_name
-from .helpers import validate_token
-from .interfaces import OTP_CHALLENGE_KEY
 from zope.annotation.interfaces import IAnnotations
-from plone.restapi.deserializer import json_body
-from plone.restapi.exceptions import DeserializationError
 
 
 manage_addTwoFactorAutenticationPluginForm = PageTemplateFile(
@@ -44,15 +44,15 @@ manage_addTwoFactorAutenticationPluginForm = PageTemplateFile(
 
 def addTwoFactorAutenticationAuthenticatorPlugin(self, id, title="", REQUEST=None):
     """
-    Add a Two Factor Autentication PAS Plugin to Plone PAS
+    Add a Two Factor Authentication PAS Plugin to Plone PAS
     """
     o = TFAPlugin(id, title)
     self._setObject(o.getId(), o)
 
     if REQUEST is not None:
-        msg = "Two+Factor+Autentication+PAS+Plugin+added."
+        msg = "Two+Factor+Authentication+PAS+Plugin+added."
         REQUEST["RESPONSE"].redirect(
-            "{0}/manage_main?manage_tabs_message={1}".format(self.absolute_url(), msg)
+            f"{self.absolute_url()}/manage_main?manage_tabs_message={msg}"
         )
 
 
@@ -61,7 +61,7 @@ class TFAPlugin(BasePlugin):
     TFA PAS Plugin
     """
 
-    meta_type = "Collective Two Factor Autentication PAS"
+    meta_type = "Collective Two Factor Authentication PAS"
     security = ClassSecurityInfo()
 
     def __init__(self, id, title=None):
@@ -118,7 +118,7 @@ class TFAPlugin(BasePlugin):
             "two_factor_authentication_enabled", False
         )
         logger.debug(
-            "Two-step verification enabled: {0}".format(
+            "Two-step verification enabled: {}".format(
                 two_factor_authentication_enabled
             )
         )
@@ -157,7 +157,7 @@ class TFAPlugin(BasePlugin):
                     authorized = authplugin.authenticateCredentials(credentials)
                 except _SWALLOWABLE_PLUGIN_EXCEPTIONS:
                     reraise(authplugin)
-                    msg = "AuthenticationPlugin {0} error".format(plugid)
+                    msg = f"AuthenticationPlugin {plugid} error"
                     logger.warning(msg, exc_info=True)
                     continue
 
@@ -175,9 +175,9 @@ class TFAPlugin(BasePlugin):
             # This does produce a "Login failed" status message though that
             # we need to remove in the token validation view
 
-            # TODO: se non è possibile creare/inviare il token l'autenticazione
-            # deve fallire (si eliminano i dati in credentials) oppure deve
-            # andare correttamente (si spostano queste due righe dentro l'if) ?
+            # TODO: if the token cannot be created/sent, should the authentication
+            # fail (you delete the data in credentials) or should it go
+            # correctly (you move these two lines into the if) ?
 
             request = self.REQUEST
 
@@ -220,7 +220,7 @@ class TFAPlugin(BasePlugin):
                             "action": "add",
                             "login": user.getId(),
                             # TODO: urlencode user and domain
-                            "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name()}?secret={secret}",
+                            "qr_code": f"otpauth://totp/{user.getId()}@{get_domain_name(request)}?secret={secret}",
                             "signature": sign_user_data(
                                 request=request, user=user, url=""
                             ),
@@ -246,7 +246,7 @@ class TFAPlugin(BasePlugin):
                     )
                 came_from = request.get("came_from", "")
                 if came_from:
-                    signed_url = "{0}&next_url={1}".format(signed_url, came_from)
+                    signed_url = f"{signed_url}&next_url={came_from}"
 
                 # XXX: an error status message is needed if using the login popup,
                 # otherwise it is automatically closed

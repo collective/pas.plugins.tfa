@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
-from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.interfaces import INonInstallable
-from zope.interface import implementer
-
 from . import logger
 from .plugins import TFAPlugin
+from plone.base.interfaces import INonInstallable
+from Products.CMFCore.utils import getToolByName
+from zope.interface import implementer
+
 
 PLUGIN_ID = "two-factor-authentication"
 
 
 @implementer(INonInstallable)
-class HiddenProfiles(object):
+class HiddenProfiles:
     def getNonInstallableProfiles(self):
         """Hide uninstall profile from site-creation and quickinstaller."""
         return [
@@ -37,9 +36,7 @@ def post_install(context):
         logger.info("Created %s in acl_users.", PLUGIN_ID)
     plugin = getattr(pas, PLUGIN_ID)
     if not isinstance(plugin, TFAPlugin):
-        raise ValueError(
-            "Existing PAS plugin {0} is not a TFAPlugin.".format(PLUGIN_ID)
-        )
+        raise ValueError(f"Existing PAS plugin {PLUGIN_ID} is not a TFAPlugin.")
 
     # Activate all supported interfaces for this plugin.
     activate = []
