@@ -180,3 +180,5 @@ If you are having issues, please create an issue at https://github.com/collectiv
 ## License
 
 The project is licensed under the GPLv2.
+
+<!-- Security scan triggered at 2025-09-02 00:54:56 -->
