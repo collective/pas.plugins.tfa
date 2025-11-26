@@ -10,14 +10,14 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Security check - Bandit
-      uses: ioggstream/bandit-report-artifacts@v0.0.2
+      uses: ioggstream/bandit-report-artifacts@v1.7.4
       with:
         project_path: src
         ignore_failure: true
 
     # This is optional
     - name: Security check report artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v5.0.0
       with:
         name: Security report
         path: output/security_report.txt
