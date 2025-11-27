@@ -12,6 +12,7 @@ log.html
 output.xml
 /robot_*
 /forest.*
+/.mxdev_*
 """
 
 [github]
