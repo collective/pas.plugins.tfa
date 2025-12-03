@@ -24,7 +24,7 @@ jobs = [
     ]
 
 [tox]
-use_mxdev = true
+use_mxdev = false
 test_matrix = {"6.2" = ["3.13"], "6.1" = ["3.13"], "6.0" = ["3.10"]}
 
 [pre_commit]
