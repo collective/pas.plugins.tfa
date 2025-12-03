@@ -15,13 +15,6 @@ output.xml
 /.mxdev_*
 """
 
-[github]
-jobs = [
-    "qa",
-    "dependencies",
-    "release_ready",
-    "circular",
-    ]
 
 [tox]
 use_mxdev = false
